@@ -8,6 +8,11 @@
 #define DISP_MAX_WIDTH 256
 #define DISP_MAX_HEIGHT 256
 
+#define ESC "\x1b"
+#define HOME ESC "[H"
+#define ROW(n) HOME ESC "["#n"B"
+#define CLEAR ESC "[2J"
+
 typedef wchar_t (*dispbuf_ptr_t)[DISP_MAX_WIDTH];
 
 typedef struct disp_pos

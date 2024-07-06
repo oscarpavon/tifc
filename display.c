@@ -21,6 +21,7 @@ void display_set_resize_handler(display_t *const display)
     action.sa_sigaction = resize_handler;
     sigaction(SIGWINCH, &action, NULL);
     display->size = get_terminal_size();
+    fprintf(stderr, CLEAR);
 }
 
 void display_render(display_t *const display)
@@ -56,7 +57,7 @@ void display_render_area(display_t *const display, disp_area_t area)
         {
             if (force_reprint || active[line][col] != previous[line][col])
             {
-                fprintf(stderr, "\x1b[%d;%dH%lc", line + 1, col + 1, active[line][col]);
+                fprintf(stderr, ESC "[%d;%dH%lc", line + 1, col + 1, active[line][col]);
             }
         }
     }
@@ -74,6 +75,18 @@ void display_set_char(display_t *const display, wint_t ch, disp_pos_t pos)
 void display_clear(display_t *const display)
 {
     wmemset(display->buffers[display->active][0], U' ', DISP_MAX_WIDTH * DISP_MAX_HEIGHT);
+}
+
+
+void display_clear_area(display_t *const display, disp_area_t area)
+{
+    unsigned int length = area.second.x - area.first.x;
+    dispbuf_ptr_t dispbuf = display->buffers[display->active];
+    for (unsigned int line = area.first.y; line <= area.second.y && line < display->size.y; ++line)
+    {
+        wchar_t *start = dispbuf[line] + area.first.x;
+        wmemset(start, U' ', length);
+    }
 }
 
 
