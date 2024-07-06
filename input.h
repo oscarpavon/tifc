@@ -6,7 +6,11 @@
 #include <stddef.h>
 
 #define INPUT_BUFFER_SIZE 6
+
+#ifndef ESC
 #define ESC "\x1b"
+#endif
+
 #define MOUSE_EVENT_HEADER  ESC "[M"
 
 #define MOUSE_EVENTS_ON     ESC "[?1003h"
@@ -65,9 +69,11 @@ input_t;
 
 typedef struct input_hooks
 {
+    void (*on_hover)(const mouse_event_t *const hover, void *const param);
     void (*on_press)(const mouse_event_t *const press, void *const param);
     void (*on_release)(const mouse_event_t *const press, void *const param);
     void (*on_drag_begin)(const mouse_event_t *const begin, void *const param);
+    void (*on_drag)(const mouse_event_t *const begin, const mouse_event_t *const moved, void *const param);
     void (*on_drag_end)(const mouse_event_t *const begin,
         const mouse_event_t *const end, void *const param);
     void (*on_scroll)(const mouse_event_t *const scroll, void *const param);

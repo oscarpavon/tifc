@@ -60,7 +60,7 @@ void input_read(input_t *input, const input_hooks_t *const hooks, void *const pa
 static void handle_mouse(input_t *const input, const input_hooks_t *const hooks, void *const param)
 {
     mouse_event_t event = decode_mouse_event(input->input_buffer);
-    print_mouse_event(&event);
+    // print_mouse_event(&event);
 
     input->prev_mouse_event = input->last_mouse_event;
     input->last_mouse_event = event;
@@ -85,6 +85,15 @@ static void handle_mouse(input_t *const input, const input_hooks_t *const hooks,
             input->drag = true;
             hooks->on_drag_begin(&input->mouse_pressed, param);
         }
+    }
+
+    if (input->drag)
+    {
+        hooks->on_drag(&input->mouse_pressed, &input->last_mouse_event, param);
+    }
+    else if (MOUSE_MOVING == last->motion)
+    {
+        hooks->on_hover(&input->last_mouse_event, param);
     }
 
     if ( (MOUSE_STATIC == prev->motion || MOUSE_MOVING == prev->motion)
