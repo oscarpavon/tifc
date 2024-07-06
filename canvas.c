@@ -1,6 +1,7 @@
 #include "canvas.h"
 #include "display.h"
-#include "dynarr.h"
+#include "input.h"
+#include "sparse_array.h"
 
 #include <endian.h>
 #include <stdio.h>
@@ -16,40 +17,63 @@ static void on_drag(const mouse_event_t *const, const mouse_event_t *const, void
 static void on_drag_end(const mouse_event_t *const, const mouse_event_t *const, void *const);
 static void on_scroll(const mouse_event_t *const, void *const);
 
+static input_hooks_t hooks_init(void)
+{
+    return (input_hooks_t)
+    {
+        .on_hover = on_hover,
+        .on_press = on_press,
+        .on_release = on_release,
+        .on_drag_begin = on_drag_begin,
+        .on_drag = on_drag,
+        .on_drag_end = on_drag_end,
+        .on_scroll = on_scroll
+    };
+}
+
+//
+// Components
+//
+static components_t components_init(void);
+static void components_deinit(components_t *const components);
+
+
 //
 // Render routines
 //
-static void render_grid(const camera_t *const camera,
-        display_t *const display,
-        const disp_pos_t grid);
+static void render_grid(transform_comp_t *camera_transform, display_t *const display, const disp_pos_t grid);
 
-static vec2_t shifted_camera_position(const camera_t *const camera);
+
+static size_t create_camera(components_t *const components);
+static vec2_t shifted_camera_position(const transform_comp_t *const camera_transform);
+
 
 canvas_t canvas_init(void)
 {
     return (canvas_t) {
-        .objects = dynarr_create(.element_size = sizeof(object_t)),
-        .input_hooks = {
-            .on_hover = on_hover,
-            .on_press = on_press,
-            .on_release = on_release,
-            .on_drag_begin = on_drag_begin,
-            .on_drag = on_drag,
-            .on_drag_end = on_drag_end,
-            .on_scroll = on_scroll
-        }
+        .components = components_init(),
+        .input_hooks = hooks_init()
     };
 }
 
 void canvas_deinit(canvas_t *const canvas)
 {
-    dynarr_destroy(canvas->objects);
+    components_deinit(&canvas->components);
+}
+
+
+void canvas_load_objects(canvas_t *const canvas)
+{
+    canvas->camera_id = create_camera(&canvas->components);
+    
 }
 
 
 void canvas_render(const canvas_t *const canvas, display_t *const display)
 {
-    render_grid(&canvas->camera, display, (disp_pos_t){30, 15});
+
+    transform_comp_t *t = sparse_get(canvas->components.transform, canvas->camera_id);
+    render_grid(t, display, (disp_pos_t){30, 15});
 }
 
 static void on_hover(const mouse_event_t *const hover, void *const param)
@@ -100,7 +124,9 @@ static void on_drag(const mouse_event_t *const begin, const mouse_event_t *const
 
     if (begin->mouse_button == MOUSE_2)
     {
-        canvas->camera.shift = (vec2_t){
+        transform_comp_t *t = sparse_get(canvas->components.transform, canvas->camera_id);
+
+        t->delta = (vec2_t){
             .x = (long long)moved->position.x - begin->position.x,
             .y = (long long)moved->position.y - begin->position.y
         };
@@ -118,11 +144,13 @@ static void on_drag_end(const mouse_event_t *const begin,
 
     if (begin->mouse_button == MOUSE_2)
     {
-       canvas->camera.position = (vec2_t){
-            canvas->camera.position.x - canvas->camera.shift.x,
-            canvas->camera.position.y - canvas->camera.shift.y
+        transform_comp_t *t = sparse_get(canvas->components.transform, canvas->camera_id);
+
+        t->location = (vec2_t){
+            t->location.x - t->delta.x,
+            t->location.y - t->delta.y
         };
-        canvas->camera.shift.x = canvas->camera.shift.y = 0;
+        t->delta.x = t->delta.y = 0;
     }
 }
 
@@ -134,9 +162,29 @@ static void on_scroll(const mouse_event_t *const scroll, void *const param)
         scroll->position.x, scroll->position.y);
 }
 
-static void render_grid(const camera_t *const camera, display_t *const display, const disp_pos_t grid)
+
+static components_t components_init(void)
 {
-    vec2_t camera_pos = shifted_camera_position(camera);
+    return (components_t)
+    {
+        .transform = sparse_create(.element_size = sizeof(transform_comp_t)),
+        .box = sparse_create(.element_size = sizeof(vec2_t)),
+        .behavior = sparse_create(.element_size = sizeof(size_t)),
+    };
+}
+
+
+static void components_deinit(components_t *const components)
+{
+    sparse_destroy(components->transform);
+    sparse_destroy(components->box);
+    sparse_destroy(components->behavior);
+}
+
+
+static void render_grid(transform_comp_t *camera_transform, display_t *const display, const disp_pos_t grid)
+{
+    vec2_t camera_pos = shifted_camera_position(camera_transform);
 
     for (unsigned int line = 0; line < display->size.y; ++line)
     {
@@ -152,12 +200,18 @@ static void render_grid(const camera_t *const camera, display_t *const display, 
     printf(ROW(0) "camera_pos:%lld, %lld         \n", camera_pos.x, camera_pos.y);
 }
 
+static size_t create_camera(components_t *const components)
+{
+    const size_t id = components->last_id++;
+    transform_comp_t camera_transform = {0};
+    sparse_insert(&components->transform, id, &camera_transform);
+    return id;
+}
 
-
-static vec2_t shifted_camera_position(const camera_t *const camera)
+static vec2_t shifted_camera_position(const transform_comp_t *const camera_transform)
 {
     return (vec2_t) {
-        .x = camera->position.x - camera->shift.x,
-        .y = camera->position.y - camera->shift.y
+        .x = camera_transform->location.x - camera_transform->delta.x,
+        .y = camera_transform->location.y - camera_transform->delta.y
     };
 }
