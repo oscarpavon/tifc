@@ -1,5 +1,6 @@
 # TIFC - Infinite canvas for your terminal
----
+
+![version](https://img.shields.io/github/v/tag/evjeesm/tifc)
 
 > 🚧 Warning
 >
