@@ -3,6 +3,12 @@
 #include <stdio.h>
 #include <unistd.h>
 
+static void on_hover(const mouse_event_t *const hover, void *const param)
+{
+    (void) param;
+    printf("hover at %u, %u\n", hover->position.x, hover->position.y);
+}
+
 static void on_press(const mouse_event_t *const press, void *const param)
 {
     (void) param;
@@ -28,11 +34,20 @@ static void on_drag_begin(const mouse_event_t *const drag_begin,
         drag_begin->position.x, drag_begin->position.y);
 }
 
+static void on_drag(const mouse_event_t *const begin,
+        const mouse_event_t *const moved, void *const param)
+{
+    (void) param;
+    printf("drag %d at %u, %u\n",
+        begin->mouse_button,
+        moved->position.x, moved->position.y);
+}
+
 static void on_drag_end(const mouse_event_t *const drag_begin,
         const mouse_event_t *const drag_end, void *const param)
 {
     (void) param;
-    printf("drag %d from %u, %u to %u, %u\n",
+    printf("drag end %d from %u, %u to %u, %u\n",
         drag_begin->mouse_button,
         drag_begin->position.x, drag_begin->position.y,
         drag_end->position.x, drag_end->position.y);
@@ -49,9 +64,11 @@ static void on_scroll(const mouse_event_t *const scroll, void *const param)
 int main(void)
 {
     input_hooks_t hooks = {
+        .on_hover = on_hover,
         .on_press = on_press,
         .on_release = on_release,
         .on_drag_begin = on_drag_begin,
+        .on_drag = on_drag,
         .on_drag_end = on_drag_end,
         .on_scroll = on_scroll,
     };
