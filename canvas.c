@@ -1,6 +1,9 @@
 #include "canvas.h"
 #include "display.h"
+#include "dynarr.h"
 #include "input.h"
+#include "frame.h"
+#include "sparse.h"
 
 #include <endian.h>
 #include <stdio.h>
@@ -35,6 +38,8 @@ static input_hooks_t hooks_init(void)
 //
 static components_t components_init(void);
 static void components_deinit(components_t *const components);
+static behaviors_t behaviors_init(void);
+static void behaviors_deinit(behaviors_t *const behaviors);
 
 
 //
@@ -44,35 +49,77 @@ static void render_grid(transform_comp_t *camera_transform, display_t *const dis
 
 
 static size_t create_camera(components_t *const components);
-static vec2_t shifted_camera_position(const transform_comp_t *const camera_transform);
 
 
 canvas_t canvas_init(void)
 {
     return (canvas_t) {
         .components = components_init(),
-        .input_hooks = hooks_init()
+        .input_hooks = hooks_init(),
+        .behaviors = behaviors_init(),
     };
 }
 
 void canvas_deinit(canvas_t *const canvas)
 {
+    behaviors_deinit(&canvas->behaviors);
     components_deinit(&canvas->components);
 }
 
 
 void canvas_load_objects(canvas_t *const canvas)
 {
-    canvas->camera_id = create_camera(&canvas->components);
-    
+    canvas->components.camera_id = create_camera(&canvas->components);
+
+    create_frame(canvas,
+       (vec2_t){.x = 0, .y = 0},
+       (vec2_t){.x = 10, .y = 10}
+    );
+
+    // Add more objects here
 }
 
 
 void canvas_render(const canvas_t *const canvas, display_t *const display)
 {
 
-    transform_comp_t *t = sparse_get(canvas->components.transform, canvas->camera_id);
+    transform_comp_t *t = sparse_get(canvas->components.transform, canvas->components.camera_id);
     render_grid(t, display, (disp_pos_t){30, 15});
+    
+    const size_t max_frames = dynarr_size(canvas->components.frames);
+
+    for (size_t i = 0; i < max_frames; ++i)
+    {
+        size_t *frame_id = dynarr_get(canvas->components.frames, i);
+        size_t *frame_behavior = sparse_get(canvas->components.behavior, *frame_id);
+
+        // access render behavior of the frame
+        render_t *render = (render_t*) sparse_get(canvas->behaviors.render, *frame_behavior);
+        (*render)(*frame_id, &canvas->components, display);
+    }
+     
+}
+
+size_t canvas_create_behavior(canvas_t *const canvas, behavior_opts_t behavior_opts)
+{
+    size_t id = canvas->behaviors.last_id++;
+    if (behavior_opts.hover)      sparse_insert(&canvas->behaviors.hover, id, &behavior_opts.hover);
+    if (behavior_opts.press)      sparse_insert(&canvas->behaviors.press, id, &behavior_opts.press);
+    if (behavior_opts.release)    sparse_insert(&canvas->behaviors.release, id,&behavior_opts.release);
+    if (behavior_opts.drag_begin) sparse_insert(&canvas->behaviors.drag_begin, id, &behavior_opts.drag_begin);
+    if (behavior_opts.drag)       sparse_insert(&canvas->behaviors.drag, id, &behavior_opts.drag);
+    if (behavior_opts.drag_end)   sparse_insert(&canvas->behaviors.drag_end, id, &behavior_opts.drag_end);
+    if (behavior_opts.scroll)     sparse_insert(&canvas->behaviors.scroll, id, &behavior_opts.scroll);
+    if (behavior_opts.render)     sparse_insert(&canvas->behaviors.render, id, &behavior_opts.render);
+    return id;
+}
+
+vec2_t shifted_camera_position(const transform_comp_t *const camera_transform)
+{
+    return (vec2_t) {
+        .x = camera_transform->location.x - camera_transform->delta.x,
+        .y = camera_transform->location.y - camera_transform->delta.y
+    };
 }
 
 static void on_hover(const mouse_event_t *const hover, void *const param)
@@ -123,7 +170,7 @@ static void on_drag(const mouse_event_t *const begin, const mouse_event_t *const
 
     if (begin->mouse_button == MOUSE_2)
     {
-        transform_comp_t *t = sparse_get(canvas->components.transform, canvas->camera_id);
+        transform_comp_t *t = sparse_get(canvas->components.transform, canvas->components.camera_id);
 
         t->delta = (vec2_t){
             .x = (long long)moved->position.x - begin->position.x,
@@ -143,7 +190,7 @@ static void on_drag_end(const mouse_event_t *const begin,
 
     if (begin->mouse_button == MOUSE_2)
     {
-        transform_comp_t *t = sparse_get(canvas->components.transform, canvas->camera_id);
+        transform_comp_t *t = sparse_get(canvas->components.transform, canvas->components.camera_id);
 
         t->location = (vec2_t){
             t->location.x - t->delta.x,
@@ -169,6 +216,7 @@ static components_t components_init(void)
         .transform = sparse_create(.element_size = sizeof(transform_comp_t)),
         .box = sparse_create(.element_size = sizeof(vec2_t)),
         .behavior = sparse_create(.element_size = sizeof(size_t)),
+        .frames = dynarr_create(.element_size = sizeof(size_t)),
     };
 }
 
@@ -178,6 +226,34 @@ static void components_deinit(components_t *const components)
     sparse_destroy(components->transform);
     sparse_destroy(components->box);
     sparse_destroy(components->behavior);
+    dynarr_destroy(components->frames);
+}
+
+static behaviors_t behaviors_init(void)
+{
+    return (behaviors_t)
+    {
+        .hover = sparse_create(.element_size = sizeof(on_hover_t)),
+        .press = sparse_create(.element_size = sizeof(on_press_t)),
+        .release = sparse_create(.element_size = sizeof(on_release_t)),
+        .drag_begin = sparse_create(.element_size = sizeof(on_drag_begin_t)),
+        .drag = sparse_create(.element_size = sizeof(on_drag_t)),
+        .drag_end = sparse_create(.element_size = sizeof(on_drag_end_t)),
+        .scroll = sparse_create(.element_size = sizeof(on_scroll_t)),
+        .render = sparse_create(.element_size = sizeof(render_t)),
+    };
+}
+
+static void behaviors_deinit(behaviors_t *const behaviors)
+{
+    sparse_destroy(behaviors->hover);
+    sparse_destroy(behaviors->press);
+    sparse_destroy(behaviors->release);
+    sparse_destroy(behaviors->drag_begin);
+    sparse_destroy(behaviors->drag);
+    sparse_destroy(behaviors->drag_end);
+    sparse_destroy(behaviors->scroll);
+    sparse_destroy(behaviors->render);
 }
 
 
@@ -207,10 +283,3 @@ static size_t create_camera(components_t *const components)
     return id;
 }
 
-static vec2_t shifted_camera_position(const transform_comp_t *const camera_transform)
-{
-    return (vec2_t) {
-        .x = camera_transform->location.x - camera_transform->delta.x,
-        .y = camera_transform->location.y - camera_transform->delta.y
-    };
-}
