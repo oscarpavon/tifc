@@ -1,10 +1,12 @@
 #include "display.h"
+#include "input.h"
 #include <termio.h>
 #include <unistd.h>
 
 int main(void)
 {
     display_t display;
+    input_enable_mouse();
     display_set_resize_handler(&display);
     while (1)
     {
@@ -19,5 +21,6 @@ int main(void)
         usleep(100);
         display_render(&display);
     }
+    input_disable_mouse();
     return 0;
 }
