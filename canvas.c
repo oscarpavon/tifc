@@ -1,7 +1,6 @@
 #include "canvas.h"
 #include "display.h"
 #include "input.h"
-#include "sparse_array.h"
 
 #include <endian.h>
 #include <stdio.h>

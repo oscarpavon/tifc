@@ -3,8 +3,7 @@
 
 #include "input.h"
 #include "display.h"
-
-#include "sparse_array.h"
+#include "sparse.h"
 
 typedef struct vec2
 {
