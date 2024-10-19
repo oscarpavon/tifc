@@ -1,6 +1,7 @@
 #include "display.h"
 #include "input.h"
 #include "canvas.h"
+#include <locale.h>
 
 typedef struct tifc
 {
@@ -13,6 +14,7 @@ tifc_t;
 tifc_t tifc_init(void)
 {
     tifc_t tifc = {.canvas = canvas_init()};
+    setlocale(LC_ALL, "");
     canvas_load_objects(&tifc.canvas);
     input_enable_mouse();
     display_set_resize_handler(&tifc.display);
