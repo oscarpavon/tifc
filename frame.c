@@ -1,7 +1,6 @@
 #include "frame.h"
 #include "canvas.h"
 #include "sparse.h"
-#include "vector.h"
 
 /// !!! not thread safe !!!
 ///
@@ -32,7 +31,7 @@ size_t create_frame(canvas_t *const canvas, vec2_t pos, vec2_t box)
     sparse_insert(&components->transform, frame_id, &transform);
     sparse_insert(&components->box, frame_id, &box);
     sparse_insert(&components->behavior, frame_id, &behavior_id);
-    dynarr_append(&components->frames, &frame_id);
+    dynarr_append(&canvas->frames, &frame_id);
     return frame_id;
 }
 

@@ -34,9 +34,7 @@ typedef struct components
     sparse_t *transform; // transform_comp_t
     sparse_t *box;       // vec2_t - width and heigh
     sparse_t *behavior;  // size_t
-    
 
-    dynarr_t *frames;    // size_t
 }
 components_t;
 
@@ -82,6 +80,7 @@ typedef struct canvas
     components_t components;
     input_hooks_t input_hooks;
     behaviors_t behaviors;
+    dynarr_t *frames;    // size_t
 }
 canvas_t;
 
