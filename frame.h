@@ -3,9 +3,14 @@
 
 #include "canvas.h"
 
+#define BORDER_STYLE_1 ((style_t){ .seq = ESC"[4;48;5;91m" })
+#define BORDER_STYLE_2 ((style_t){ .seq = ESC"[5;38;5;16;48;5;73m" })
+
 size_t register_behavior(canvas_t *canvas);
 size_t create_frame(canvas_t *const canvas, vec2_t pos, vec2_t box);
+size_t create_styled_frame(canvas_t *const canvas, vec2_t pos, vec2_t box, style_t style);
+void destroy_frame(canvas_t *const canvas, const size_t frame_id);
 
-void render_frame(const size_t id, const components_t *const components, display_t *const display);
+void render_frame(const canvas_t *const canvas, display_t *const display, const size_t frame_id);
 
 #endif// _FRAME_H_

@@ -5,7 +5,6 @@
 #include "frame.h"
 #include "sparse.h"
 
-#include <endian.h>
 #include <stdio.h>
 
 //
@@ -57,7 +56,7 @@ canvas_t canvas_init(void)
         .components = components_init(),
         .input_hooks = hooks_init(),
         .behaviors = behaviors_init(),
-        .frames = dynarr_create(.element_size = sizeof(size_t)),
+        .ents.frames = dynarr_create(.element_size = sizeof(size_t)),
     };
 }
 
@@ -65,17 +64,23 @@ void canvas_deinit(canvas_t *const canvas)
 {
     behaviors_deinit(&canvas->behaviors);
     components_deinit(&canvas->components);
-    dynarr_destroy(canvas->frames);
+    dynarr_destroy(canvas->ents.frames);
 }
 
 
 void canvas_load_objects(canvas_t *const canvas)
 {
-    canvas->components.camera_id = create_camera(&canvas->components);
+    canvas->ents.camera_id = create_camera(&canvas->components);
 
-    create_frame(canvas,
+    create_styled_frame(canvas,
        (vec2_t){.x = 0, .y = 0},
-       (vec2_t){.x = 10, .y = 10}
+       (vec2_t){.x = 10, .y = 10},
+       BORDER_STYLE_1
+    );
+    create_styled_frame(canvas,
+       (vec2_t){.x = 50, .y = 10},
+       (vec2_t){.x = 30, .y = 20},
+       BORDER_STYLE_2
     );
 
     // Add more objects here
@@ -85,21 +90,20 @@ void canvas_load_objects(canvas_t *const canvas)
 void canvas_render(const canvas_t *const canvas, display_t *const display)
 {
 
-    transform_comp_t *t = sparse_get(canvas->components.transform, canvas->components.camera_id);
+    transform_comp_t *t = sparse_get(canvas->components.transform, canvas->ents.camera_id);
     render_grid(t, display, (disp_pos_t){30, 15});
-    
-    const size_t max_frames = dynarr_size(canvas->frames);
+
+    const size_t max_frames = dynarr_size(canvas->ents.frames);
 
     for (size_t i = 0; i < max_frames; ++i)
     {
-        size_t *frame_id = dynarr_get(canvas->frames, i);
+        size_t *frame_id = dynarr_get(canvas->ents.frames, i);
         size_t *frame_behavior = sparse_get(canvas->components.behavior, *frame_id);
 
         // access render behavior of the frame
         render_t *render = (render_t*) sparse_get(canvas->behaviors.render, *frame_behavior);
-        (*render)(*frame_id, &canvas->components, display);
+        (*render)(canvas, display, *frame_id);
     }
-     
 }
 
 size_t canvas_create_behavior(canvas_t *const canvas, behavior_opts_t behavior_opts)
@@ -172,7 +176,7 @@ static void on_drag(const mouse_event_t *const begin, const mouse_event_t *const
 
     if (begin->mouse_button == MOUSE_2)
     {
-        transform_comp_t *t = sparse_get(canvas->components.transform, canvas->components.camera_id);
+        transform_comp_t *t = sparse_get(canvas->components.transform, canvas->ents.camera_id);
 
         t->delta = (vec2_t){
             .x = (long long)moved->position.x - begin->position.x,
@@ -192,7 +196,7 @@ static void on_drag_end(const mouse_event_t *const begin,
 
     if (begin->mouse_button == MOUSE_2)
     {
-        transform_comp_t *t = sparse_get(canvas->components.transform, canvas->components.camera_id);
+        transform_comp_t *t = sparse_get(canvas->components.transform, canvas->ents.camera_id);
 
         t->location = (vec2_t){
             t->location.x - t->delta.x,
@@ -218,6 +222,7 @@ static components_t components_init(void)
         .transform = sparse_create(.element_size = sizeof(transform_comp_t)),
         .box = sparse_create(.element_size = sizeof(vec2_t)),
         .behavior = sparse_create(.element_size = sizeof(size_t)),
+        .data = sparse_create(.element_size = sizeof(void*)),
     };
 }
 
@@ -227,6 +232,7 @@ static void components_deinit(components_t *const components)
     sparse_destroy(components->transform);
     sparse_destroy(components->box);
     sparse_destroy(components->behavior);
+    sparse_destroy(components->data);
 }
 
 static behaviors_t behaviors_init(void)

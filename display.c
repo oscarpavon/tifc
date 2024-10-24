@@ -5,6 +5,7 @@
 #include <signal.h>
 
 static int prev_buffer(const int active);
+static bool disp_diff(const disp_char_t *const a, const disp_char_t *const b);
 static void display_swap_buffers(display_t *const display);
 static disp_pos_t get_terminal_size(void);
 
@@ -40,8 +41,9 @@ void display_render(display_t *const display)
 
 void display_render_area(display_t *const display, disp_area_t area)
 {
+    int prev = prev_buffer(display->active);
     dispbuf_ptr_t active = display->buffers[display->active];
-    dispbuf_ptr_t previous = display->buffers[prev_buffer(display->active)];
+    dispbuf_ptr_t previous = display->buffers[prev];
 
     bool force_reprint = false;
     if (g_resize_detected)
@@ -51,13 +53,21 @@ void display_render_area(display_t *const display, disp_area_t area)
         g_resize_detected = false;
     }
 
-    for (unsigned int line = area.first.y; line <= area.second.y && line < display->size.y; ++line)
+    for (unsigned int line = area.first.y;
+            line <= area.second.y && line < display->size.y;
+            ++line)
     {
-        for (unsigned int col = area.first.x; col <= area.second.x && col < display->size.x; ++col)
+        for (unsigned int col = area.first.x;
+                col <= area.second.x && col < display->size.x;
+                ++col)
         {
-            if (force_reprint || active[line][col] != previous[line][col])
+            if (force_reprint
+                || disp_diff(&active[line][col], &previous[line][col]))
             {
-                fprintf(stderr, ESC "[%d;%dH%lc", line + 1, col + 1, active[line][col]);
+                if (active[line][col].style.seq)
+                    fprintf(stderr, "%s", active[line][col].style.seq);
+                fprintf(stderr, ESC"[%d;%dH%lc", line + 1, col + 1, active[line][col].ch);
+                fprintf(stderr, ESC RESET_STYLE);
             }
         }
     }
@@ -68,24 +78,40 @@ void display_render_area(display_t *const display, disp_area_t area)
 
 void display_set_char(display_t *const display, wint_t ch, disp_pos_t pos)
 {
-    display->buffers[display->active][pos.y][pos.x] = ch;
+    display->buffers[display->active][pos.y][pos.x].ch = ch;
 }
 
+void display_set_style(display_t *const display, style_t style, disp_pos_t pos)
+{
+    display->buffers[display->active][pos.y][pos.x].style = style;
+}
 
 void display_clear(display_t *const display)
 {
-    wmemset(display->buffers[display->active][0], U' ', DISP_MAX_WIDTH * DISP_MAX_HEIGHT);
+    display_clear_area(display, (disp_area_t) {
+        .first = {0, 0},
+        .second = {
+            display->size.x - 1,
+            display->size.y - 1
+        }
+    });
 }
-
 
 void display_clear_area(display_t *const display, disp_area_t area)
 {
-    unsigned int length = area.second.x - area.first.x;
-    dispbuf_ptr_t dispbuf = display->buffers[display->active];
-    for (unsigned int line = area.first.y; line <= area.second.y && line < display->size.y; ++line)
+    dispbuf_ptr_t active = display->buffers[display->active];
+
+    for (unsigned int line = area.first.y;
+            line <= area.second.y && line < display->size.y;
+            ++line)
     {
-        wchar_t *start = dispbuf[line] + area.first.x;
-        wmemset(start, U' ', length);
+        for (unsigned int col = area.first.x;
+                col <= area.second.x && col < display->size.x;
+                ++col)
+        {
+            active[line][col].style = (style_t){ 0 };
+            active[line][col].ch = U' ';
+        }
     }
 }
 
@@ -122,12 +148,15 @@ static int prev_buffer(const int active)
     return (active + DISP_BUFFERS - 1) % DISP_BUFFERS;
 }
 
+static bool disp_diff(const disp_char_t *const a, const disp_char_t *const b)
+{
+    return memcmp(a, b, sizeof(disp_char_t));
+}
 
 static void display_swap_buffers(display_t *const display)
 {
     display->active = (display->active + 1) % DISP_BUFFERS;
 }
-
 
 static disp_pos_t get_terminal_size(void)
 {

@@ -12,13 +12,6 @@ typedef struct vec2
 }
 vec2_t;
 
-typedef struct camera
-{
-    vec2_t location; /* top left corner of the view on infinite canvas */
-    vec2_t delta;
-}
-camera_t;
-
 typedef struct transform_comp
 {
     vec2_t location;
@@ -26,40 +19,17 @@ typedef struct transform_comp
 }
 transform_comp_t;
 
-
 typedef struct components
 {
     size_t last_id;
-    size_t camera_id;
+
     sparse_t *transform; // transform_comp_t
     sparse_t *box;       // vec2_t - width and heigh
     sparse_t *behavior;  // size_t
 
+    sparse_t *data;      // contains pointer to a data blob
 }
 components_t;
-
-typedef void (*on_hover_t)(const mouse_event_t *const, void *const);
-typedef void (*on_press_t)(const mouse_event_t *const, void *const);
-typedef void (*on_release_t)(const mouse_event_t *const, void *const);
-typedef void (*on_drag_begin_t)(const mouse_event_t *const, void *const);
-typedef void (*on_drag_t)(const mouse_event_t *const, const mouse_event_t *const, void *const);
-typedef void (*on_drag_end_t)(const mouse_event_t *const, const mouse_event_t *const, void *const);
-typedef void (*on_scroll_t)(const mouse_event_t *const, void *const);
-
-typedef void (*render_t)(const size_t id, const components_t *const components, display_t *const display);
-
-typedef struct
-{
-    on_hover_t hover;
-    on_press_t press;
-    on_release_t release;
-    on_drag_begin_t drag_begin;
-    on_drag_t drag;
-    on_drag_end_t drag_end;
-    on_scroll_t scroll;
-    render_t render;
-}
-behavior_opts_t;
 
 typedef struct behaviors
 {
@@ -75,15 +45,54 @@ typedef struct behaviors
 } 
 behaviors_t;
 
+typedef struct entities
+{
+    size_t camera_id;
+    dynarr_t *frames;    // size_t
+}
+entities;
+
+typedef enum canvas_mode
+{
+    NORMAL_MODE,  /* just scrolling around */
+    COMMAND_MODE, /* enter command */
+    RESIZE_MODE,  /* resize frames */
+    EDIT_MODE     /* edit selected entity */
+}
+canvas_mode_t;
+
 typedef struct canvas
 {
     components_t components;
     input_hooks_t input_hooks;
     behaviors_t behaviors;
-    dynarr_t *frames;    // size_t
+
+    entities ents;
+    canvas_mode_t mode;
 }
 canvas_t;
 
+typedef void (*on_hover_t)(const mouse_event_t *const, void *const);
+typedef void (*on_press_t)(const mouse_event_t *const, void *const);
+typedef void (*on_release_t)(const mouse_event_t *const, void *const);
+typedef void (*on_drag_begin_t)(const mouse_event_t *const, void *const);
+typedef void (*on_drag_t)(const mouse_event_t *const, const mouse_event_t *const, void *const);
+typedef void (*on_drag_end_t)(const mouse_event_t *const, const mouse_event_t *const, void *const);
+typedef void (*on_scroll_t)(const mouse_event_t *const, void *const);
+typedef void (*render_t)(const canvas_t *const canvas, display_t *const display, const size_t id);
+
+typedef struct
+{
+    on_hover_t hover;
+    on_press_t press;
+    on_release_t release;
+    on_drag_begin_t drag_begin;
+    on_drag_t drag;
+    on_drag_end_t drag_end;
+    on_scroll_t scroll;
+    render_t render;
+}
+behavior_opts_t;
 
 canvas_t canvas_init(void);
 void canvas_deinit(canvas_t *const canvas);
