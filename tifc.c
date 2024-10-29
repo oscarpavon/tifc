@@ -13,13 +13,13 @@ tifc_t;
 
 tifc_t tifc_init(void)
 {
+    setlocale(LC_ALL, "");
+    input_enable_mouse();
     tifc_t tifc = {
         .canvas = canvas_init(),
         .input = input_init(),
     };
-    setlocale(LC_ALL, "");
     canvas_load_objects(&tifc.canvas);
-    input_enable_mouse();
     display_set_resize_handler(&tifc.display);
     return tifc;
 }
@@ -28,6 +28,7 @@ void tifc_deinit(tifc_t *const tifc)
 {
     input_disable_mouse();
     canvas_deinit(&tifc->canvas);
+    input_deinit(&tifc->input);
 }
 
 void tifc_render(tifc_t *const tifc)
@@ -45,7 +46,9 @@ void tifc_event_loop(void)
 
     while (1)
     {
-        input_read(&tifc.input, &tifc.canvas.input_hooks, &tifc.canvas);
+        // input_read(&tifc.input, &tifc.canvas.input_hooks, &tifc.canvas);
+        int status = input_handle_events(&tifc.input, &tifc.canvas.input_hooks, &tifc.canvas);
+        if (0 != status) break;
         input_display_overlay(&tifc.input, &tifc.display, (disp_pos_t){.x = 0, .y = 10});
         tifc_render(&tifc);
     }
