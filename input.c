@@ -4,11 +4,63 @@
 #include <termios.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/epoll.h>
+#include <signal.h>
+#include <assert.h>
+#include <fcntl.h>
+#include "display.h"
+#include "hash.h"
+
+#define MAX_EVENTS 10
+
+typedef struct {
+    int temp;
+}
+buffer_t;
 
 static void handle_mouse(input_t *const input, const input_hooks_t *const hooks, void *const param);
 static mouse_event_t decode_mouse_event(unsigned char *buffer);
-static void print_mouse_event(const mouse_event_t *const event);
+static int print_mouse_event(const mouse_event_t *const event, char *overlay, int n);
 
+input_t input_init(void)
+{
+    int epfd = epoll_create1(0);
+    if (epfd == -1) {
+        perror("epoll_create1");
+        exit(EXIT_FAILURE);
+    }
+    struct epoll_event ev;
+    ev.data.fd = STDIN_FILENO; // Monitor standard input
+    if (epoll_ctl(epfd, EPOLL_CTL_ADD, STDIN_FILENO, &ev) == -1) {
+        perror("epoll_ctl: stdin");
+        exit(EXIT_FAILURE);
+    }
+    hashmap_t *descriptors = hm_create(
+        .hashfunc = hash_int,
+        .key_size = sizeof(int),
+        .value_size = sizeof(buffer_t),
+    );
+    if (!descriptors)
+    {
+        exit(EXIT_FAILURE);
+    }
+    input_t input = {
+        .mode = INPUT_MODE_MOUSE,
+        .epfd = epfd,
+        .descriptors = descriptors,
+    };
+    return input;
+}
+
+void input_deinit(input_t *const input)
+{
+    hm_destroy(input->descriptors);
+    close(input->epfd);
+}
 
 void input_enable_mouse(void)
 {
@@ -35,45 +87,119 @@ void input_disable_mouse(void)
         PASTE_MODE_OFF);
 }
 
-
-void input_read(input_t *input, const input_hooks_t *const hooks, void *const param)
+int input_handle_events(input_t *const input, const input_hooks_t *const hooks, void *const param)
 {
-    memset(input->input_buffer, 0, INPUT_BUFFER_SIZE);
+    struct epoll_event events[MAX_EVENTS];
+    int events_num = 0;
+    // acquire events
+    while (true)
+    {
+        events_num = epoll_wait(input->epfd, events, MAX_EVENTS, -1);
+        if (events_num != -1)
+        {
+            break; // epoll succeded
+        }
+        else if (errno != EINTR) // something went wrong
+        {
+            perror("epoll_wait");
+            return errno;
+        }
+        // The call was interrupted by a signal; just continue
+        // Retry epoll_wait
+    }
 
-    input->input_bytes = read(fileno(stdin), input->input_buffer, INPUT_BUFFER_SIZE);
-    if (0 == memcmp(input->input_buffer, MOUSE_EVENT_HEADER, sizeof(MOUSE_EVENT_HEADER) - 1))
+    for (int e = 0; e < events_num; e++)
+    {
+        if (events[e].events & EPOLLIN)
+        {
+            // process standard input
+            if (events[e].data.fd == STDIN_FILENO)
+            {
+                // Data available from stdin
+                (void) input_read(input, hooks, param);
+            }
+
+            { // process buffers
+                buffer_t *buffer = hm_get(input->descriptors, &events[e].data.fd);
+                if (buffer)
+                {
+                    // write data to buffer
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+int input_read(input_t *input, const input_hooks_t *const hooks, void *const param)
+{
+    memset(input->buffer, 0, INPUT_BUFFER_SIZE); // TODO: maybe unnecessary
+
+    int input_bytes = read(STDIN_FILENO, input->buffer, INPUT_BUFFER_SIZE);
+    if (input_bytes > 0)
+    {
+        // Check for Ctrl+D
+        if (memchr(input->buffer, '\x04', input_bytes))
+        {
+            printf("\nEOF detected. Exiting...\n");
+            return -1;
+            // goto cleanup;
+        }
+    }
+    else if (input_bytes == -1)
+    {
+        perror("read from stdin");
+    }
+
+    if (0 == memcmp(input->buffer, MOUSE_EVENT_HEADER, sizeof(MOUSE_EVENT_HEADER) - 1))
     {
         handle_mouse(input, hooks, param);
     }
-    else {
-        printf("%x %x %x %x %x %x\n", 
-            input->input_buffer[0],
-            input->input_buffer[1],
-            input->input_buffer[2],
-            input->input_buffer[3],
-            input->input_buffer[4],
-            input->input_buffer[5]);
+    else
+    {
+        printf("%x %x %x %x %x %x\n",
+            input->buffer[0],
+            input->buffer[1],
+            input->buffer[2],
+            input->buffer[3],
+            input->buffer[4],
+            input->buffer[5]);
     }
+
+    return 0;
 }
 
+void input_display_overlay(input_t *const input, display_t *const display, disp_pos_t pos)
+{
+    char *overlay = display_overlay(display);
+    int n = strlen(overlay);
+    n += sprintf(overlay + n, ESC "[%d;%dH", pos.y, pos.x);
+    n += sprintf(overlay + n, "INPUT MODE: %s", input->mode == INPUT_MODE_TEXT ? "TEXT_MODE" : "MOUSE_MODE");
+    if (input->mode == INPUT_MODE_MOUSE)
+    {
+        n += sprintf(overlay + n, ESC "[%d;%dH", pos.y + 1, pos.x);
+        n += print_mouse_event(&input->mouse_mode.last_mouse_event, overlay, n);
+    }
+    assert(n < DISP_OVERLAY_SIZE);
+}
 
 static void handle_mouse(input_t *const input, const input_hooks_t *const hooks, void *const param)
 {
-    mouse_event_t event = decode_mouse_event(input->input_buffer);
-    // print_mouse_event(&event);
+    mouse_mode_t *mouse_mode = &input->mouse_mode;
+    mouse_event_t event = decode_mouse_event(input->buffer);
 
-    input->prev_mouse_event = input->last_mouse_event;
-    input->last_mouse_event = event;
+    mouse_mode->prev_mouse_event = mouse_mode->last_mouse_event;
+    mouse_mode->last_mouse_event = event;
 
-    const mouse_event_t *const prev = &input->prev_mouse_event;
-    const mouse_event_t *const last = &input->last_mouse_event;
+    const mouse_event_t *const prev = &mouse_mode->prev_mouse_event;
+    const mouse_event_t *const last = &mouse_mode->last_mouse_event;
 
     if ( (MOUSE_STATIC == prev->motion || MOUSE_MOVING == prev->motion)
         && MOUSE_NONE == prev->mouse_button
         && MOUSE_NONE != last->mouse_button)
     {
-        input->mouse_pressed = *last;
-        hooks->on_press(&input->mouse_pressed, param);
+mouse_mode->mouse_pressed = *last;
+        hooks->on_press(&mouse_mode->mouse_pressed, param);
     }
 
     if ( MOUSE_STATIC == prev->motion
@@ -82,18 +208,18 @@ static void handle_mouse(input_t *const input, const input_hooks_t *const hooks,
         if ( MOUSE_MOVING == last->motion
             && MOUSE_NONE != last->mouse_button)
         {
-            input->drag = true;
-            hooks->on_drag_begin(&input->mouse_pressed, param);
+            mouse_mode->drag = true;
+            hooks->on_drag_begin(&mouse_mode->mouse_pressed, param);
         }
     }
 
-    if (input->drag)
+    if (mouse_mode->drag)
     {
-        hooks->on_drag(&input->mouse_pressed, &input->last_mouse_event, param);
+        hooks->on_drag(&mouse_mode->mouse_pressed, &mouse_mode->last_mouse_event, param);
     }
     else if (MOUSE_MOVING == last->motion)
     {
-        hooks->on_hover(&input->last_mouse_event, param);
+        hooks->on_hover(&mouse_mode->last_mouse_event, param);
     }
 
     if ( (MOUSE_STATIC == prev->motion || MOUSE_MOVING == prev->motion)
@@ -102,16 +228,16 @@ static void handle_mouse(input_t *const input, const input_hooks_t *const hooks,
         if ( MOUSE_STATIC == last->motion
             && MOUSE_NONE == last->mouse_button)
         {
-            if (!input->drag)
+            if (!mouse_mode->drag)
             {
-                hooks->on_release(&input->mouse_pressed, param);
+                hooks->on_release(&mouse_mode->mouse_pressed, param);
             }
             else
             {
-                input->drag = false;
-                hooks->on_drag_end(&input->mouse_pressed, &input->mouse_released, param);
+                mouse_mode->drag = false;
+                hooks->on_drag_end(&mouse_mode->mouse_pressed, &mouse_mode->mouse_released, param);
             }
-            input->mouse_released = *last;
+            mouse_mode->mouse_released = *last;
         }
     }
 
@@ -138,14 +264,17 @@ static mouse_event_t decode_mouse_event(unsigned char *buffer)
 }
 
 
-static void print_mouse_event(const mouse_event_t *const event)
+static int print_mouse_event(const mouse_event_t *const event, char *overlay, int n)
 {
-    fprintf(stderr, "MOUSE_EVENT (button: %u"
-        ", mod:[shift: %u, alt: %u, ctrl: %u]"
-        ", motion: %s, x: %d, y: %d)\n",
+    n = sprintf(overlay + n, "MOUSE_EVENT:\n\tbutton: %u"
+        "\n\tmod:[shift: %u, alt: %u, ctrl: %u]"
+        "\n\tmotion: %s, x: %d, y: %d)\n",
         event->mouse_button,
         event->modifier & 0x1, (event->modifier >> 1) & 0x1, (event->modifier >> 2) & 0x1,
         event->motion == MOUSE_STATIC ? "static" :
         event->motion == MOUSE_MOVING ? "moving" : "scroll",
         event->position.x, event->position.y);
+    return n;
 }
+
+

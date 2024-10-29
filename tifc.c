@@ -13,7 +13,10 @@ tifc_t;
 
 tifc_t tifc_init(void)
 {
-    tifc_t tifc = {.canvas = canvas_init()};
+    tifc_t tifc = {
+        .canvas = canvas_init(),
+        .input = input_init(),
+    };
     setlocale(LC_ALL, "");
     canvas_load_objects(&tifc.canvas);
     input_enable_mouse();
@@ -43,6 +46,7 @@ void tifc_event_loop(void)
     while (1)
     {
         input_read(&tifc.input, &tifc.canvas.input_hooks, &tifc.canvas);
+        input_display_overlay(&tifc.input, &tifc.display, (disp_pos_t){.x = 0, .y = 10});
         tifc_render(&tifc);
     }
 

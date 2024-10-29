@@ -2,10 +2,12 @@
 #define _INPUT_H_
 
 #include "display.h"
+#include "hashmap.h"
 
 #include <stddef.h>
 
-#define INPUT_BUFFER_SIZE 6
+
+#define INPUT_BUFFER_SIZE 1024
 
 #ifndef ESC
 #define ESC "\x1b"
@@ -21,7 +23,7 @@
 
 #define MOUSE_OFFSET 0x20
 
-typedef enum mouse_button
+typedef enum
 {
     MOUSE_1,
     MOUSE_2,
@@ -30,7 +32,7 @@ typedef enum mouse_button
 }
 mouse_button_t;
 
-typedef enum mouse_motion
+typedef enum
 {
     MOUSE_STATIC = 1,
     MOUSE_MOVING,
@@ -38,13 +40,20 @@ typedef enum mouse_motion
 }
 mouse_motion_t;
 
-typedef enum input_modifier
+typedef enum
 {
     MOD_NONE = 0,
     MOD_SHIFT = 1,
     MOD_CTRL = 2
 }
 input_modifier_t;
+
+typedef enum
+{
+    INPUT_MODE_TEXT = 0,
+    INPUT_MODE_MOUSE
+}
+input_mode_t;
 
 typedef struct mouse_event
 {
@@ -55,15 +64,24 @@ typedef struct mouse_event
 }
 mouse_event_t;
 
-typedef struct input
+typedef struct
 {
-    unsigned char input_buffer[INPUT_BUFFER_SIZE];
-    size_t input_bytes;
     mouse_event_t prev_mouse_event;
     mouse_event_t last_mouse_event;
     mouse_event_t mouse_pressed;
     mouse_event_t mouse_released;
     bool drag;
+}
+mouse_mode_t;
+
+typedef struct input
+{
+    unsigned char buffer[INPUT_BUFFER_SIZE];
+    input_mode_t mode;
+    mouse_mode_t mouse_mode;
+
+    int epfd; /* epoll file descriptor */
+    hashmap_t *descriptors; /* maps fd to a buffer that receives and outputs */
 }
 input_t;
 
@@ -80,8 +98,12 @@ typedef struct input_hooks
 }
 input_hooks_t;
 
+input_t input_init(void);
+void input_deinit(input_t *const input);
 void input_enable_mouse(void);
 void input_disable_mouse(void);
-void input_read(input_t *const input, const input_hooks_t *const hooks, void *const param);
+int input_handle_events(input_t *const input, const input_hooks_t *const hooks, void *const param);
+void input_display_overlay(input_t *const input, display_t *const display, disp_pos_t pos);
+int input_read(input_t *const input, const input_hooks_t *const hooks, void *const param);
 
 #endif//_INPUT_H_

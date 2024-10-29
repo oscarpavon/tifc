@@ -82,7 +82,11 @@ void canvas_load_objects(canvas_t *const canvas)
        (vec2_t){.x = 30, .y = 20},
        BORDER_STYLE_2
     );
-
+    create_styled_frame(canvas,
+       (vec2_t){.x = 30, .y = 25},
+       (vec2_t){.x = 22, .y = 16},
+       BORDER_STYLE_3
+    );
     // Add more objects here
 }
 
@@ -278,7 +282,10 @@ static void render_grid(transform_comp_t *camera_transform, display_t *const dis
             }
         }
     }
-    printf(ROW(0) "camera_pos:%lld, %lld         \n", camera_pos.x, camera_pos.y);
+
+    char *overlay = display_overlay(display);
+    int n = strlen(overlay);
+    n += sprintf(overlay + n, HOME ERASE_LINE "CAMERA: [%lld, %lld]\n", camera_pos.x, camera_pos.y);
 }
 
 static size_t create_camera(components_t *const components)

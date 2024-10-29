@@ -34,10 +34,16 @@ void display_render(display_t *const display)
             .y = screen.y - 1
         }
     };
-
+    fprintf(stderr, ESC SHOW_CURSOR);
     display_render_area(display, screen_area);
+    fprintf(stderr, "%s" ESC HIDE_CURSOR ESC HOME, display->overlay); // render overlay sequence
+    display->overlay[0] = '\0'; // clear overlay
 }
 
+char* display_overlay(display_t *const display)
+{
+    return display->overlay;
+}
 
 void display_render_area(display_t *const display, disp_area_t area)
 {
