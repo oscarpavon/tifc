@@ -1,1 +1,1 @@
-../sparse/dynarr/src/dynarr.h
+./dynarr/src/dynarr.h
