@@ -1,0 +1,12 @@
+[submodule "hashmap"]
+	path = hashmap
+	url = https://github.com/evjeesm/hashmap
+[submodule "dynarr"]
+	path = dynarr
+	url = https://github.com/evjeesm/dynarr
+[submodule "vector"]
+	path = vector
+	url = https://github.com/evjeesm/vector
+[submodule "sparse"]
+	path = sparse
+	url = https://github.com/evjeesm/sparse
