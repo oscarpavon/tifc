@@ -22,7 +22,7 @@ void display_set_resize_handler(display_t *const display)
     action.sa_sigaction = resize_handler;
     sigaction(SIGWINCH, &action, NULL);
     display->size = get_terminal_size();
-    fprintf(stderr, CLEAR);
+    printf(CLEAR);
 }
 
 void display_render(display_t *const display)
@@ -34,10 +34,12 @@ void display_render(display_t *const display)
             .y = screen.y - 1
         }
     };
-    fprintf(stderr, ESC SHOW_CURSOR);
+    printf(SHOW_CURSOR);
     display_render_area(display, screen_area);
-    fprintf(stderr, "%s" ESC HIDE_CURSOR ESC HOME, display->overlay); // render overlay sequence
+    printf("%s" HIDE_CURSOR HOME, display->overlay); // render overlay sequence
     display->overlay[0] = '\0'; // clear overlay
+
+    fflush(stdout);
 }
 
 char* display_overlay(display_t *const display)
@@ -71,9 +73,9 @@ void display_render_area(display_t *const display, disp_area_t area)
                 || disp_diff(&active[line][col], &previous[line][col]))
             {
                 if (active[line][col].style.seq)
-                    fprintf(stderr, "%s", active[line][col].style.seq);
-                fprintf(stderr, ESC"[%d;%dH%lc", line + 1, col + 1, active[line][col].ch);
-                fprintf(stderr, ESC RESET_STYLE);
+                    printf("%s", active[line][col].style.seq);
+                printf(ESC"[%d;%dH%lc", line + 1, col + 1, active[line][col].ch);
+                printf(ESC RESET_STYLE);
             }
         }
     }

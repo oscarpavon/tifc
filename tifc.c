@@ -46,11 +46,13 @@ void tifc_event_loop(void)
 
     while (1)
     {
+        input_display_overlay(&tifc.input, &tifc.display, (disp_pos_t){.x = 0, .y = 10});
+        tifc_render(&tifc);
+
         // input_read(&tifc.input, &tifc.canvas.input_hooks, &tifc.canvas);
         int status = input_handle_events(&tifc.input, &tifc.canvas.input_hooks, &tifc.canvas);
         if (0 != status) break;
-        input_display_overlay(&tifc.input, &tifc.display, (disp_pos_t){.x = 0, .y = 10});
-        tifc_render(&tifc);
+
     }
 
     tifc_deinit(&tifc);

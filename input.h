@@ -13,6 +13,7 @@
 #define ESC "\x1b"
 #endif
 
+#define MOUSE_SEQ_LEN       6
 #define MOUSE_EVENT_HEADER  ESC "[M"
 
 #define MOUSE_EVENTS_ON     ESC "[?1003h"
@@ -51,7 +52,8 @@ input_modifier_t;
 typedef enum
 {
     INPUT_MODE_TEXT = 0,
-    INPUT_MODE_MOUSE
+    INPUT_MODE_MOUSE,
+    INPUT_MODE_COMMAND
 }
 input_mode_t;
 
@@ -66,6 +68,8 @@ mouse_event_t;
 
 typedef struct
 {
+    unsigned char buffer[MOUSE_SEQ_LEN];
+    int           bytes;
     mouse_event_t prev_mouse_event;
     mouse_event_t last_mouse_event;
     mouse_event_t mouse_pressed;

@@ -31,7 +31,7 @@ typedef struct
 signal_monitor_t;
 static volatile signal_monitor_t s_sm = {0};
 
-static void handle_sigint(int sig);
+static void handle_sigint(int sig, siginfo_t *info, void *ctx);
 static void handle_mouse(input_t *const input, const input_hooks_t *const hooks, void *const param);
 static mouse_event_t decode_mouse_event(unsigned char *buffer);
 static int print_mouse_event(const mouse_event_t *const event, char *overlay, int n);
@@ -39,14 +39,17 @@ static int print_mouse_event(const mouse_event_t *const event, char *overlay, in
 input_t input_init(void)
 {
     int epfd = epoll_create1(0);
-    if (epfd == -1) {
+    if (-1 == epfd)
+    {
         perror("epoll_create1");
         exit(EXIT_FAILURE);
     }
     struct epoll_event ev;
     ev.data.fd = STDIN_FILENO; // Monitor standard input
     ev.events = EPOLLIN;
-    if (-1 == epoll_ctl(epfd, EPOLL_CTL_ADD, STDIN_FILENO, &ev)) {
+
+    if (-1 == epoll_ctl(epfd, EPOLL_CTL_ADD, STDIN_FILENO, &ev))
+    {
         perror("epoll_ctl: stdin");
         exit(EXIT_FAILURE);
     }
@@ -58,7 +61,7 @@ input_t input_init(void)
 
     // Set sigint handler
     struct sigaction sa;
-    sa.sa_handler = handle_sigint;
+    sa.sa_sigaction = handle_sigint;
     sa.sa_flags = 0; // No special flags
     sigemptyset(&sa.sa_mask);
     sigaction(SIGINT, &sa, NULL);
@@ -72,6 +75,7 @@ input_t input_init(void)
         .epfd = epfd,
         .descriptors = descriptors,
     };
+ 
     return input;
 }
 
@@ -83,9 +87,9 @@ void input_deinit(input_t *const input)
 
 void input_enable_mouse(void)
 {
-    // set unblocking io behavior 
-    int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
-    fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
+    // set unblocking io behavior
+    // int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+    // fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
 
 
     // disable canon mode and echo 
@@ -93,9 +97,7 @@ void input_enable_mouse(void)
     tcgetattr(STDIN_FILENO, &attr);
     attr.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &attr);
-    fprintf(stderr,
-        MOUSE_EVENTS_ON
-        PASTE_MODE_ON);
+    printf(MOUSE_EVENTS_ON PASTE_MODE_ON);
 }
 
 
@@ -106,9 +108,7 @@ void input_disable_mouse(void)
     tcgetattr(STDIN_FILENO, &attr);
     attr.c_lflag |= (ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &attr);
-    fprintf(stderr,
-        MOUSE_EVENTS_OFF
-        PASTE_MODE_OFF);
+    printf(MOUSE_EVENTS_OFF PASTE_MODE_OFF);
 }
 
 int input_handle_events(input_t *const input, const input_hooks_t *const hooks, void *const param)
@@ -168,8 +168,6 @@ int input_handle_events(input_t *const input, const input_hooks_t *const hooks, 
 
 int input_read(input_t *input, const input_hooks_t *const hooks, void *const param)
 {
-    memset(input->buffer, 0, INPUT_BUFFER_SIZE); // TODO: maybe unnecessary
-
     int input_bytes = read(STDIN_FILENO, input->buffer, INPUT_BUFFER_SIZE);
     if (input_bytes > 0)
     {
@@ -313,7 +311,8 @@ static int print_mouse_event(const mouse_event_t *const event, char *overlay, in
 }
 
 // Signal handler for SIGINT (Ctrl+C)
-static void handle_sigint(int sig)
+static void handle_sigint(int sig, siginfo_t *info, void *ctx)
 {
+    (void) sig; (void) info; (void) ctx;
     s_sm.sigint = true;
 } 

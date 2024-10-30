@@ -9,18 +9,15 @@
 #define DISP_MAX_WIDTH 256
 #define DISP_MAX_HEIGHT 256
 #define DISP_OVERLAY_SIZE 1024
-#define ESC "\x1b"
-#define HOME ESC "[H"
+
+#define ESC         "\x1b"
+#define HOME        ESC "[H"
 #define ROW(n) HOME ESC "["#n"B"
-#define CLEAR ESC "[2J"
-#define DEFAULT_FG "[39m"
-#define DEFAULT_BG "[49m"
-#define FG "38"
-#define BG "48"
-#define RESET_STYLE "[0m"
-#define HIDE_CURSOR "[?25l"
-#define SHOW_CURSOR "[?25h"
-#define ERASE_LINE ESC "[K"
+#define CLEAR       ESC "[2J"
+#define RESET_STYLE ESC "[0m"
+#define HIDE_CURSOR ESC "[?25l"
+#define SHOW_CURSOR ESC "[?25h"
+#define ERASE_LINE  ESC "[K"
 
 typedef struct
 {
