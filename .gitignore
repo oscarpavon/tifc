@@ -12,6 +12,9 @@
 !deps/hashmap
 !deps/sparse
 
+# libs softlinks
+!deps/*.a
+
 !.gitignore
 
 !experimental
