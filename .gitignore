@@ -1,7 +1,16 @@
+# ignore all
+*
+
+# except
 !*.c
 !*.h
 !*.sh
 !*.md
+
+!deps
+!deps/dynarr
+!deps/hashmap
+!deps/sparse
 
 !.gitignore
 
