@@ -94,7 +94,8 @@ void display_set_style(display_t *const display, style_t style, disp_pos_t pos)
     display->buffers[display->active][pos.y][pos.x].style = style;
 }
 
-void display_erase(){
+void display_erase(void)
+{
     printf(CLEAR);
 }
 
