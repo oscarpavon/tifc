@@ -24,3 +24,9 @@ of some other libraries that I am developing in parallel.
 
 ## Future Plans
 - Make it generic library for tui applications as replacement for curses-like.
+
+## Build
+```
+./rebuild-modules.sh
+./build.sh
+```

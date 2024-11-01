@@ -64,6 +64,7 @@ void display_render(display_t *const display);
 char* display_overlay(display_t *const display);
 void display_render_area(display_t *const display, disp_area_t area);
 void display_clear(display_t *const display);
+void display_erase(void);
 void display_clear_area(display_t *const display, disp_area_t area);
 bool disp_pos_equal(disp_pos_t a, disp_pos_t b);
 disp_area_t normalized_area(disp_area_t area);
