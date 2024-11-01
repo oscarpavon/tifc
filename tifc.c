@@ -52,7 +52,7 @@ void tifc_event_loop(void)
         // input_read(&tifc.input, &tifc.canvas.input_hooks, &tifc.canvas);
         int status = input_handle_events(&tifc.input, &tifc.canvas.input_hooks, &tifc.canvas);
         if (0 != status){
-            display_clear_all();
+            display_erase();
             break;
         }
     }
