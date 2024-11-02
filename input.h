@@ -1,6 +1,7 @@
 #ifndef _INPUT_H_
 #define _INPUT_H_
 
+#include "circbuf.h"
 #include "display.h"
 #include "hashmap.h"
 
@@ -78,6 +79,7 @@ mouse_mode_t;
 
 typedef struct input
 {
+    circbuf_t   * queue;
     unsigned char buffer[INPUT_BUFFER_SIZE];
     size_t        input_bytes;
     input_mode_t  mode;

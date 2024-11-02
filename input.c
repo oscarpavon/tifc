@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include "display.h"
 #include "hash.h"
+#include "circbuf.h"
 
 #define MAX_EVENTS 10
 
@@ -59,6 +60,15 @@ input_t input_init(void)
         .key_size = sizeof(int),
         .value_size = sizeof(buffer_t),
     );
+    if (!descriptors)
+    {
+        exit(EXIT_FAILURE);
+    }
+    circbuf_t *queue = circbuf_create(.initial_cap=INPUT_BUFFER_SIZE);
+    if (!queue)
+    {
+        exit(EXIT_FAILURE);
+    }
 
     // Set sigint handler
     struct sigaction sa;
@@ -67,17 +77,12 @@ input_t input_init(void)
     sigemptyset(&sa.sa_mask);
     sigaction(SIGINT, &sa, NULL);
 
-    if (!descriptors)
-    {
-        exit(EXIT_FAILURE);
-    }
-    input_t input = {
+    return (input_t) {
         .mode = INPUT_MODE_MOUSE,
         .epfd = epfd,
         .descriptors = descriptors,
+        .queue = queue,
     };
- 
-    return input;
 }
 
 void input_deinit(input_t *const input)
