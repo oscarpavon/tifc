@@ -7,3 +7,6 @@
 [submodule "deps/hashmap"]
 	path = deps/hashmap
 	url = https://github.com/evjeesm/hashmap
+[submodule "deps/circbuf"]
+	path = deps/circbuf
+	url = https://github.com/evjeesm/circbuf

@@ -11,6 +11,7 @@
 !deps/dynarr
 !deps/hashmap
 !deps/sparse
+!deps/circbuf
 
 # libs softlinks
 !deps/*.a
