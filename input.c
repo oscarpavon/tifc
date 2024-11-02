@@ -33,7 +33,7 @@ static volatile signal_monitor_t s_sm = {0};
 
 static void handle_sigint(int sig, siginfo_t *info, void *ctx);
 static void handle_mouse(input_t *const input, const input_hooks_t *const hooks, void *const param);
-static void handle_keyboard(input_t *const input, const input_hooks_t *const hooks, void *const param);
+static int handle_keyboard(input_t *const input, size_t input_bytes, const input_hooks_t *const hooks, void *const param);
 static mouse_event_t decode_mouse_event(unsigned char *buffer);
 static int print_mouse_event(const mouse_event_t *const event, char *overlay, int n);
 
@@ -88,14 +88,11 @@ void input_deinit(input_t *const input)
 
 void input_enable_mouse(void)
 {
-    // set unblocking io behavior
-    // int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
-    // fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
-
-
     // disable canon mode and echo 
     struct termios attr;
     tcgetattr(STDIN_FILENO, &attr);
+    attr.c_cc[VMIN] = 1; // Minimum number of characters to read
+    attr.c_cc[VTIME] = 0; // No timeout
     attr.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &attr);
     printf(MOUSE_EVENTS_ON PASTE_MODE_ON);
@@ -186,20 +183,12 @@ int input_read(input_t *input, const input_hooks_t *const hooks, void *const par
     if (0 == memcmp(input->buffer, MOUSE_EVENT_HEADER, sizeof(MOUSE_EVENT_HEADER) - 1))
     {
         handle_mouse(input, hooks, param);
+        assert(0 == input_bytes % MOUSE_SEQ_LEN);
         return 0;
     }
 
     // keyboard sequence
-    // ...
-    
-    // Check for Ctrl+D
-    if (memchr(input->buffer, '\x04', input_bytes))
-    {
-        printf("\nEOF detected. Exiting...\n");
-        return -1;
-    }
-
-    return 0;
+    return handle_keyboard(input, input_bytes, hooks, param);
 }
 
 void input_display_overlay(input_t *const input, display_t *const display, disp_pos_t pos)
@@ -281,9 +270,16 @@ static void handle_mouse(input_t *const input, const input_hooks_t *const hooks,
 }
 
 
-static void handle_keyboard(input_t *const input, const input_hooks_t *const hooks, void *const param)
+static int handle_keyboard(input_t *const input, size_t input_bytes, const input_hooks_t *const hooks, void *const param)
 {
-
+    printf(ROW(3) "input(%d): %.*s", (int)input_bytes, (int)input_bytes, input->buffer);
+    // Check for Ctrl+D
+    if (memchr(input->buffer, '\x04', input_bytes))
+    {
+        printf("\nEOF detected. Exiting...\n");
+        return 1;
+    }
+    return 0;
 }
 
 static mouse_event_t decode_mouse_event(unsigned char *buffer)
