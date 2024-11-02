@@ -1,6 +1,7 @@
 #include "display.h"
 #include "input.h"
 #include "canvas.h"
+
 #include <locale.h>
 
 typedef struct tifc
@@ -40,29 +41,30 @@ void tifc_render(tifc_t *const tifc)
     display_render(&tifc->display);
 }
 
-void tifc_event_loop(void)
+int tifc_event_loop(void)
 {
     tifc_t tifc = tifc_init();
+    int exit_status = 0;
 
     while (1)
     {
         input_display_overlay(&tifc.input, &tifc.display, (disp_pos_t){.x = 0, .y = 10});
         tifc_render(&tifc);
 
-        // input_read(&tifc.input, &tifc.canvas.input_hooks, &tifc.canvas);
-        int status = input_handle_events(&tifc.input, &tifc.canvas.input_hooks, &tifc.canvas);
-        if (0 != status){
+        exit_status = input_handle_events(&tifc.input, &tifc.canvas.input_hooks, &tifc.canvas);
+        if (0 != exit_status)
+        {
             display_erase();
             break;
         }
     }
 
     tifc_deinit(&tifc);
+    return exit_status;
 }
 
 int main(void)
 {
-    tifc_event_loop();
-    return 0;
+    return tifc_event_loop();
 }
 
