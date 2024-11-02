@@ -169,34 +169,33 @@ int input_handle_events(input_t *const input, const input_hooks_t *const hooks, 
 int input_read(input_t *input, const input_hooks_t *const hooks, void *const param)
 {
     int input_bytes = read(STDIN_FILENO, input->buffer, INPUT_BUFFER_SIZE);
-    if (input_bytes > 0)
+    if (input_bytes == 0)
     {
-        // Check for Ctrl+D
-        if (memchr(input->buffer, '\x04', input_bytes))
-        {
-            printf("\nEOF detected. Exiting...\n");
-            return -1;
-            // goto cleanup;
-        }
-    }
-    else if (input_bytes == -1)
-    {
-        perror("read from stdin");
+        return 0; // nothing to decode
     }
 
+    if (input_bytes == -1)
+    {
+        int error = errno;
+        perror("read from stdin");
+        return error; // just propagate error code for now
+    }
+
+    // input buffer contains mouse header
     if (0 == memcmp(input->buffer, MOUSE_EVENT_HEADER, sizeof(MOUSE_EVENT_HEADER) - 1))
     {
         handle_mouse(input, hooks, param);
+        return 0;
     }
-    else
+
+    // keyboard sequence
+    // ...
+    
+    // Check for Ctrl+D
+    if (memchr(input->buffer, '\x04', input_bytes))
     {
-        printf("%x %x %x %x %x %x\n",
-            input->buffer[0],
-            input->buffer[1],
-            input->buffer[2],
-            input->buffer[3],
-            input->buffer[4],
-            input->buffer[5]);
+        printf("\nEOF detected. Exiting...\n");
+        return -1;
     }
 
     return 0;
