@@ -68,8 +68,6 @@ mouse_event_t;
 
 typedef struct
 {
-    unsigned char buffer[MOUSE_SEQ_LEN];
-    int           bytes;
     mouse_event_t prev_mouse_event;
     mouse_event_t last_mouse_event;
     mouse_event_t mouse_pressed;
@@ -81,8 +79,9 @@ mouse_mode_t;
 typedef struct input
 {
     unsigned char buffer[INPUT_BUFFER_SIZE];
-    input_mode_t mode;
-    mouse_mode_t mouse_mode;
+    size_t        input_bytes;
+    input_mode_t  mode;
+    mouse_mode_t  mouse_mode;
 
     int epfd; /* epoll file descriptor */
     hashmap_t *descriptors; /* maps fd to a buffer that receives and outputs */

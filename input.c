@@ -33,6 +33,7 @@ static volatile signal_monitor_t s_sm = {0};
 
 static void handle_sigint(int sig, siginfo_t *info, void *ctx);
 static void handle_mouse(input_t *const input, const input_hooks_t *const hooks, void *const param);
+static void handle_keyboard(input_t *const input, const input_hooks_t *const hooks, void *const param);
 static mouse_event_t decode_mouse_event(unsigned char *buffer);
 static int print_mouse_event(const mouse_event_t *const event, char *overlay, int n);
 
@@ -279,6 +280,11 @@ static void handle_mouse(input_t *const input, const input_hooks_t *const hooks,
     }
 }
 
+
+static void handle_keyboard(input_t *const input, const input_hooks_t *const hooks, void *const param)
+{
+
+}
 
 static mouse_event_t decode_mouse_event(unsigned char *buffer)
 {
