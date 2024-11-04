@@ -7,14 +7,14 @@
 
 #include <stddef.h>
 
-
-#define INPUT_BUFFER_SIZE 1024
+#define INPUT_QUEUE_SIZE  4*1024 // 4kb
+#define INPUT_BUFFER_SIZE 256
 
 #ifndef ESC
 #define ESC "\x1b"
 #endif
 
-#define MOUSE_SEQ_LEN       6
+#define MOUSE_EVENT_BUF_SIZE    3
 #define MOUSE_EVENT_HEADER  ESC "[M"
 
 #define MOUSE_EVENTS_ON     ESC "[?1003h"
@@ -58,7 +58,7 @@ typedef enum
 }
 input_mode_t;
 
-typedef struct mouse_event
+typedef struct
 {
     int mouse_button;
     input_modifier_t modifier;
@@ -69,6 +69,7 @@ mouse_event_t;
 
 typedef struct
 {
+    unsigned char event_buf[MOUSE_EVENT_BUF_SIZE];
     mouse_event_t prev_mouse_event;
     mouse_event_t last_mouse_event;
     mouse_event_t mouse_pressed;
@@ -77,11 +78,55 @@ typedef struct
 }
 mouse_mode_t;
 
+typedef enum
+{
+/* MOUSE SEQUENCE                 */
+    S0 = 0x0, /* 00000000         */
+    S1,       /* 00000001 ESC     */
+    S2,       /* 00000010 [       */
+    S3,       /* 00000011 M       */
+    S4,       /* 00000100 event   */
+    S5,       /* 00000101 line    */
+/*  S0           00000000 col     */
+
+/* PASTE SEQUENCE                 */
+/* S0            00000000         */
+/* S1            00000001 ESC     */
+/* S2            00000010 [       */
+   S6 = 0x10, /* 00010000 2       */
+   S7,        /* 00010001 0       */
+   S8,        /* 00010010 0       */
+   S9,        /* 00010011 ~       */
+/* S9            00010100 *       */  // * - means any character
+   S10,       /* 00010101 ESC     */
+   S11,       /* 00010110 [       */
+   S12,       /* 00010111 2       */
+   S13,       /* 00011000 0       */
+   S14,       /* 00011001 1       */
+/* S0            00000000 ~       */
+}
+istate_t;
+
+typedef enum
+{
+    INPUT_SUCCESS = 0,
+    INPUT_ERROR,
+    INPUT_QUEUE_IS_FULL,
+    INPUT_CANCEL_COMMAND,
+    INPUT_EXIT,
+}
+input_status_t;
+
+typedef struct
+{
+    unsigned char state; // stores a value of istate_t 1 byte long
+}
+input_sm_t;
+
 typedef struct input
 {
-    circbuf_t   * queue;
-    unsigned char buffer[INPUT_BUFFER_SIZE];
-    size_t        input_bytes;
+    input_sm_t    state_machine;
+    circbuf_t    *queue;
     input_mode_t  mode;
     mouse_mode_t  mouse_mode;
 
@@ -109,6 +154,7 @@ void input_enable_mouse(void);
 void input_disable_mouse(void);
 int input_handle_events(input_t *const input, const input_hooks_t *const hooks, void *const param);
 void input_display_overlay(input_t *const input, display_t *const display, disp_pos_t pos);
-int input_read(input_t *const input, const input_hooks_t *const hooks, void *const param);
+int input_read(input_t *const input);
+int input_process(input_t *const input, const input_hooks_t *const hooks, void *const param);
 
 #endif//_INPUT_H_
