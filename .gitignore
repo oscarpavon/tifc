@@ -13,6 +13,8 @@
 !deps/sparse
 !deps/circbuf
 
+!ui
+
 # libs softlinks
 !deps/*.a
 

@@ -8,7 +8,6 @@
 #define DISP_BUFFERS 2
 #define DISP_MAX_WIDTH 256
 #define DISP_MAX_HEIGHT 256
-#define DISP_OVERLAY_SIZE 1024
 
 #define ESC         "\x1b"
 #define HOME        ESC "[H"
@@ -44,7 +43,6 @@ typedef struct display
 {
     disp_char_t buffers[DISP_BUFFERS][DISP_MAX_HEIGHT][DISP_MAX_WIDTH];
     int active; /* index of the active buffer */
-    char overlay[DISP_OVERLAY_SIZE];
     disp_pos_t size;
 }
 display_t;
@@ -61,7 +59,6 @@ void display_set_resize_handler(display_t *const display);
 void display_set_char(display_t *const display, wint_t ch, disp_pos_t pos);
 void display_set_style(display_t *const display, style_t style, disp_pos_t pos);
 void display_render(display_t *const display);
-char* display_overlay(display_t *const display);
 void display_render_area(display_t *const display, disp_area_t area);
 void display_clear(display_t *const display);
 void display_erase(void);

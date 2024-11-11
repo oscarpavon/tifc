@@ -36,15 +36,8 @@ void display_render(display_t *const display)
     };
     printf(SHOW_CURSOR);
     display_render_area(display, screen_area);
-    printf("%s" HIDE_CURSOR HOME, display->overlay); // render overlay sequence
-    display->overlay[0] = '\0'; // clear overlay
 
     fflush(stdout);
-}
-
-char* display_overlay(display_t *const display)
-{
-    return display->overlay;
 }
 
 void display_render_area(display_t *const display, disp_area_t area)
