@@ -39,7 +39,8 @@ static void handle_mouse(input_t *const input, const input_hooks_t *const hooks,
 static int handle_keyboard(input_t *const input, char ch);
 static mouse_event_t decode_mouse_event(unsigned char buffer[static 3]);
 static void print_mouse_event(const mouse_event_t *const event);
-
+static int input_read(input_t *const input);
+static int input_process(input_t *const input, const input_hooks_t *const hooks, void *const param);
 static int input_feed(input_t *const input, const input_hooks_t *const hooks, void *const param, const char ch);
 
 input_t input_init(void)
@@ -176,7 +177,20 @@ int input_handle_events(input_t *const input, const input_hooks_t *const hooks, 
     return 0;
 }
 
-int input_read(input_t *input)
+
+
+void input_display_overlay(input_t *const input, disp_pos_t pos)
+{
+    printf(ESC "[%d;%dH", pos.y, pos.x);
+    printf("INPUT MODE: %s", input->mode == INPUT_MODE_TEXT ? "TEXT_MODE" : "MOUSE_MODE");
+    if (input->mode == INPUT_MODE_MOUSE)
+    {
+        printf(ESC "[%d;%dH", pos.y + 1, pos.x);
+        print_mouse_event(&input->mouse_mode.last_mouse_event);
+    }
+}
+
+static int input_read(input_t *input)
 {
     const size_t available_space = circbuf_avail_to_write(input->queue);
     if (available_space == 0)
@@ -209,7 +223,7 @@ int input_read(input_t *input)
 }
 
 
-int input_process(input_t *const input, const input_hooks_t *const hooks, void *const param)
+static int input_process(input_t *const input, const input_hooks_t *const hooks, void *const param)
 {
     unsigned char buffer[INPUT_PROCESS_BUF];
     const size_t available = circbuf_avail_to_read(input->queue);
@@ -226,17 +240,6 @@ int input_process(input_t *const input, const input_hooks_t *const hooks, void *
     return INPUT_SUCCESS;
 }
 
-
-void input_display_overlay(input_t *const input, disp_pos_t pos)
-{
-    printf(ESC "[%d;%dH", pos.y, pos.x);
-    printf("INPUT MODE: %s", input->mode == INPUT_MODE_TEXT ? "TEXT_MODE" : "MOUSE_MODE");
-    if (input->mode == INPUT_MODE_MOUSE)
-    {
-        printf(ESC "[%d;%dH", pos.y + 1, pos.x);
-        print_mouse_event(&input->mouse_mode.last_mouse_event);
-    }
-}
 
 static void handle_mouse(input_t *const input, const input_hooks_t *const hooks, void *const param)
 {
