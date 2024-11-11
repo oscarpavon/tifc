@@ -102,6 +102,7 @@ void input_enable_mouse(void)
     attr.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &attr);
     printf(MOUSE_EVENTS_ON PASTE_MODE_ON);
+    fflush(stdout);
 }
 
 
@@ -113,6 +114,7 @@ void input_disable_mouse(void)
     attr.c_lflag |= (ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &attr);
     printf(MOUSE_EVENTS_OFF PASTE_MODE_OFF);
+    fflush(stdout);
 }
 
 int input_handle_events(input_t *const input, const input_hooks_t *const hooks, void *const param)

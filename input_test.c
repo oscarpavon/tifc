@@ -72,8 +72,8 @@ int main(void)
         .on_drag_end = on_drag_end,
         .on_scroll = on_scroll,
     };
-    input_t input = input_init();
     input_enable_mouse();
+    input_t input = input_init();
     while (1)
     {
         int status = input_handle_events(&input, &hooks, NULL);
