@@ -72,14 +72,15 @@ int main(void)
         .on_drag_end = on_drag_end,
         .on_scroll = on_scroll,
     };
-    input_t input = {0};
+    input_t input = input_init();
     input_enable_mouse();
-
     while (1)
     {
-        input_read(&input, &hooks, NULL);
+        int status = input_handle_events(&input, &hooks, NULL);
+        if (status) break;
         usleep(100);
     }
 
+    input_deinit(&input);
     input_disable_mouse();
 }
