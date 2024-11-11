@@ -283,9 +283,7 @@ static void render_grid(transform_comp_t *camera_transform, display_t *const dis
         }
     }
 
-    char *overlay = display_overlay(display);
-    int n = strlen(overlay);
-    n += sprintf(overlay + n, HOME ERASE_LINE "CAMERA: [%lld, %lld]\n", camera_pos.x, camera_pos.y);
+    printf(HOME ERASE_LINE "CAMERA: [%lld, %lld]\n", camera_pos.x, camera_pos.y);
 }
 
 static size_t create_camera(components_t *const components)

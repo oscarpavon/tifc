@@ -153,7 +153,7 @@ void input_deinit(input_t *const input);
 void input_enable_mouse(void);
 void input_disable_mouse(void);
 int input_handle_events(input_t *const input, const input_hooks_t *const hooks, void *const param);
-void input_display_overlay(input_t *const input, display_t *const display, disp_pos_t pos);
+void input_display_overlay(input_t *const input, disp_pos_t pos);
 int input_read(input_t *const input);
 int input_process(input_t *const input, const input_hooks_t *const hooks, void *const param);
 

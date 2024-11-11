@@ -48,7 +48,7 @@ int tifc_event_loop(void)
 
     while (1)
     {
-        input_display_overlay(&tifc.input, &tifc.display, (disp_pos_t){.x = 0, .y = 10});
+        input_display_overlay(&tifc.input, (disp_pos_t){.x = 0, .y = 10});
         tifc_render(&tifc);
 
         exit_status = input_handle_events(&tifc.input, &tifc.canvas.input_hooks, &tifc.canvas);

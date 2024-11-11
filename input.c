@@ -37,8 +37,8 @@ static void setup_signal_handlers(void);
 static void handle_sigint(int sig, siginfo_t *info, void *ctx);
 static void handle_mouse(input_t *const input, const input_hooks_t *const hooks, void *const param);
 static int handle_keyboard(input_t *const input, char ch);
-static mouse_event_t decode_mouse_event(unsigned char *buffer);
-static int print_mouse_event(const mouse_event_t *const event, char *overlay, int n);
+static mouse_event_t decode_mouse_event(unsigned char buffer[static 3]);
+static void print_mouse_event(const mouse_event_t *const event);
 
 static int input_feed(input_t *const input, const input_hooks_t *const hooks, void *const param, const char ch);
 
@@ -227,18 +227,15 @@ int input_process(input_t *const input, const input_hooks_t *const hooks, void *
 }
 
 
-void input_display_overlay(input_t *const input, display_t *const display, disp_pos_t pos)
+void input_display_overlay(input_t *const input, disp_pos_t pos)
 {
-    char *overlay = display_overlay(display);
-    int n = strlen(overlay);
-    n += sprintf(overlay + n, ESC "[%d;%dH", pos.y, pos.x);
-    n += sprintf(overlay + n, "INPUT MODE: %s", input->mode == INPUT_MODE_TEXT ? "TEXT_MODE" : "MOUSE_MODE");
+    printf(ESC "[%d;%dH", pos.y, pos.x);
+    printf("INPUT MODE: %s", input->mode == INPUT_MODE_TEXT ? "TEXT_MODE" : "MOUSE_MODE");
     if (input->mode == INPUT_MODE_MOUSE)
     {
-        n += sprintf(overlay + n, ESC "[%d;%dH", pos.y + 1, pos.x);
-        n += print_mouse_event(&input->mouse_mode.last_mouse_event, overlay, n);
+        printf(ESC "[%d;%dH", pos.y + 1, pos.x);
+        print_mouse_event(&input->mouse_mode.last_mouse_event);
     }
-    assert(n < DISP_OVERLAY_SIZE);
 }
 
 static void handle_mouse(input_t *const input, const input_hooks_t *const hooks, void *const param)
@@ -308,7 +305,8 @@ static void handle_mouse(input_t *const input, const input_hooks_t *const hooks,
 
 static int handle_keyboard(input_t *const input, char ch)
 {
-    printf(ROW(3) "input: %c %#x \n", ch, (int)ch);
+    (void) input;
+    printf(ROW(3) ERASE_LINE "input: %c %#x \n", ch, (int)ch);
     // Check for Ctrl+D
     if (ch == '\x04')
     {
@@ -438,17 +436,16 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks, vo
 }
 
 
-static int print_mouse_event(const mouse_event_t *const event, char *overlay, int n)
+static void print_mouse_event(const mouse_event_t *const event)
 {
-    n = sprintf(overlay + n, "MOUSE_EVENT:\n\tbutton: %u"
-        "\n\tmod:[shift: %u, alt: %u, ctrl: %u]"
-        "\n\tmotion: %s, x: %d, y: %d)\n",
+    printf(ERASE_LINE "MOUSE_EVENT:\n\tbutton: %u\n"
+        ERASE_LINE "\tmod:[shift: %u, alt: %u, ctrl: %u]\n"
+        ERASE_LINE "\tmotion: %s, x: %d, y: %d)\n",
         event->mouse_button,
         event->modifier & 0x1, (event->modifier >> 1) & 0x1, (event->modifier >> 2) & 0x1,
         event->motion == MOUSE_STATIC ? "static" :
         event->motion == MOUSE_MOVING ? "moving" : "scroll",
         event->position.x, event->position.y);
-    return n;
 }
 
 static void setup_signal_handlers(void)
