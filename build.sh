@@ -34,5 +34,5 @@ LIBS="
     -lm
 "
 
-gcc $CPPFLAGS $CFLAGS $OBJECTS $LIBS
+gcc $CPPFLAGS $CFLAGS $OBJECTS $LIBS -o tifc
 
