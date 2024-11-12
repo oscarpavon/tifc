@@ -112,7 +112,6 @@ typedef enum
     INPUT_SUCCESS = 0,
     INPUT_ERROR,
     INPUT_QUEUE_IS_FULL,
-    INPUT_CANCEL_COMMAND,
     INPUT_EXIT,
 }
 input_status_t;
@@ -127,7 +126,6 @@ typedef struct input
 {
     input_sm_t    state_machine;
     circbuf_t    *queue;
-    input_mode_t  mode;
     mouse_mode_t  mouse_mode;
 
     int epfd; /* epoll file descriptor */

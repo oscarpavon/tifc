@@ -79,7 +79,6 @@ input_t input_init(void)
 
     return (input_t) {
         .queue = queue,
-        .mode = INPUT_MODE_MOUSE,
         .epfd = epfd,
         .descriptors = descriptors,
     };
@@ -184,12 +183,7 @@ int input_handle_events(input_t *const input, const input_hooks_t *const hooks, 
 void input_display_overlay(input_t *const input, disp_pos_t pos)
 {
     printf(ESC "[%d;%dH", pos.y, pos.x);
-    printf("INPUT MODE: %s", input->mode == INPUT_MODE_TEXT ? "TEXT_MODE" : "MOUSE_MODE");
-    if (input->mode == INPUT_MODE_MOUSE)
-    {
-        printf(ESC "[%d;%dH", pos.y + 1, pos.x);
-        print_mouse_event(&input->mouse_mode.last_mouse_event);
-    }
+    print_mouse_event(&input->mouse_mode.last_mouse_event);
 }
 
 static int input_read(input_t *input)
@@ -311,7 +305,7 @@ static void handle_mouse(input_t *const input, const input_hooks_t *const hooks,
 static int handle_keyboard(input_t *const input, char ch)
 {
     (void) input;
-    printf(ROW(3) ERASE_LINE "input: %c %#x \n", ch, (int)ch);
+    printf(ROW(3) "input: %c %#x        \n", ch, (int)ch);
     // Check for Ctrl+D
     if (ch == '\x04')
     {
@@ -443,11 +437,13 @@ static int input_feed(input_t *const input, const input_hooks_t *const hooks, vo
 
 static void print_mouse_event(const mouse_event_t *const event)
 {
-    printf(ERASE_LINE "MOUSE_EVENT:\n\tbutton: %u\n"
-        ERASE_LINE "\tmod:[shift: %u, alt: %u, ctrl: %u]\n"
-        ERASE_LINE "\tmotion: %s, x: %d, y: %d)\n",
+    printf("MOUSE_EVENT:\nbutton: %u   \n"
+        "mod:[shift: %u, alt: %u, ctrl: %u]   \n"
+        "motion: %s, x: %d, y: %d)   \n",
         event->mouse_button,
-        event->modifier & 0x1, (event->modifier >> 1) & 0x1, (event->modifier >> 2) & 0x1,
+        (event->modifier)      & 0x1,
+        (event->modifier >> 1) & 0x1,
+        (event->modifier >> 2) & 0x1,
         event->motion == MOUSE_STATIC ? "static" :
         event->motion == MOUSE_MOVING ? "moving" : "scroll",
         event->position.x, event->position.y);
