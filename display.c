@@ -8,6 +8,7 @@ static int prev_buffer(const int active);
 static bool disp_diff(const disp_char_t *const a, const disp_char_t *const b);
 static void display_swap_buffers(display_t *const display);
 static disp_pos_t get_terminal_size(void);
+static void set_border(display_t *const display, wchar_t border_char, disp_pos_t pos, style_t style);
 
 static volatile bool g_resize_detected = false;
 static void resize_handler(int signo, siginfo_t *info, void *ctx)
@@ -85,6 +86,48 @@ void display_set_char(display_t *const display, wint_t ch, disp_pos_t pos)
 void display_set_style(display_t *const display, style_t style, disp_pos_t pos)
 {
     display->buffers[display->active][pos.y][pos.x].style = style;
+}
+
+void display_draw_border(display_t *const display, style_t style, border_set_t border, disp_area_t area)
+{
+    for (unsigned int y = area.first.y; y <= area.second.y; ++y)
+    {
+        for (unsigned int x = area.first.x; x <= area.second.x; ++x)
+        {
+            disp_pos_t pos = {x, y};
+            if (x == area.first.x && y == area.first.y)
+                set_border(display, border.top_left, pos, style);
+            else if (x == area.second.x && y == area.first.y)
+                set_border(display, border.top_right, pos, style);
+            else if (x == area.second.x && y == area.second.y)
+                set_border(display, border.bot_right, pos, style);
+            else if (x == area.first.x && y == area.second.y)
+                set_border(display, border.bot_left, pos, style);
+            else if (x == area.first.x || x == area.second.x)
+                set_border(display, border.vertical, pos, style);
+            else if (y == area.first.y || y == area.second.y)
+                set_border(display, border.horizontal, pos, style);
+        }
+    }
+}
+
+void display_fill_area(display_t *const display, style_t style, disp_area_t area)
+{
+    for (unsigned int y = area.first.y; y <= area.second.y; ++y)
+    {
+        for (unsigned int x = area.first.x; x <= area.second.x; ++x)
+        {
+            disp_pos_t pos = {x, y};
+            display_set_style(display, style, pos);
+            display_set_char(display, U' ', pos);
+        }
+    }
+}
+
+static void set_border(display_t *const display, wchar_t border_char, disp_pos_t pos, style_t style)
+{
+    display_set_style(display, style, pos);
+    display_set_char(display, border_char, pos);
 }
 
 void display_erase(void)

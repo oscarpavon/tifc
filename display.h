@@ -1,6 +1,8 @@
 #ifndef _DISPLAY_H_
 #define _DISPLAY_H_
 
+#include "border.h"
+
 #include <wchar.h>
 #include <string.h>
 #include <stdbool.h>
@@ -58,6 +60,8 @@ disp_area_t;
 void display_set_resize_handler(display_t *const display);
 void display_set_char(display_t *const display, wint_t ch, disp_pos_t pos);
 void display_set_style(display_t *const display, style_t style, disp_pos_t pos);
+void display_draw_border(display_t *const display, style_t style, border_set_t border, disp_area_t area);
+void display_fill_area(display_t *const display, style_t style, disp_area_t area);
 void display_render(display_t *const display);
 void display_render_area(display_t *const display, disp_area_t area);
 void display_clear(display_t *const display);
