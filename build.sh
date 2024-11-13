@@ -23,6 +23,8 @@ OBJECTS="
     display.c
     input.c
     frame.c
+    ui/ui.c
+    ui/panel.c
 "
 
 LIBS="
