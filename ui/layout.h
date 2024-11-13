@@ -35,13 +35,6 @@ layout_align_t;
 
 typedef enum
 {
-    LAYOUT_HUG_H_CONTENT = 1 << 0,
-    LAYOUT_HUG_V_CONTENT = 1 << 1
-}
-layout_size_type_t;
-
-typedef enum
-{
     LAYOUT_CONTENT_DISTRIBUTE = 0,
     LAYOUT_CONTENT_CENTER,
     LAYOUT_CONTENT_START,
@@ -58,13 +51,11 @@ layout_dir_t;
 
 typedef struct
 {
-    layout_dir_t dir;
-    unsigned int align; /* bitset of layout_align_t */
-    disp_pos_t   min;
-    disp_pos_t   max;
+    layout_dir_t    dir;
+    layout_align_t  align;
+    disp_pos_t      min;
+    disp_pos_t      max;
 }
 layout_t;
-
-typedef disp_area_t screen_space_bounds_t;
 
 #endif /* _LAYOUT_H_ */
