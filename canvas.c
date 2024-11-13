@@ -1,3 +1,5 @@
+
+#include "tifc.h"
 #include "canvas.h"
 #include "display.h"
 #include "dynarr.h"
@@ -54,7 +56,7 @@ canvas_t canvas_init(void)
 {
     return (canvas_t) {
         .components = components_init(),
-        .input_hooks = hooks_init(),
+        .hooks = hooks_init(),
         .behaviors = behaviors_init(),
         .ents.frames = dynarr_create(.element_size = sizeof(size_t)),
     };
@@ -135,17 +137,18 @@ vec2_t shifted_camera_position(const transform_comp_t *const camera_transform)
 static void on_hover(const mouse_event_t *const hover, void *const param)
 {
     (void) param;
-    printf(ROW(1) "hover, at %u, %u\n",
+    printf(ROW(1) "hover, at %u, %u                         \n",
         hover->position.x, hover->position.y);
 }
 
 static void on_press(const mouse_event_t *const press, void *const param)
 {
-    (void) param;
-    printf(ROW(1) "press %d, at %u, %u\n",
+    tifc_t *tifc = param;
+    printf(ROW(1) "press %d, at %u, %u                      \n",
         press->mouse_button,
         press->position.x, press->position.y);
 
+    if (press->mouse_button == MOUSE_3) tifc_ui_mode(tifc);
     //
     // search target object
     // activate act on press
@@ -154,7 +157,7 @@ static void on_press(const mouse_event_t *const press, void *const param)
 static void on_release(const mouse_event_t *const press, void *const param)
 {
     (void) param;
-    printf(ROW(1) "release %d, at %u, %u\n",
+    printf(ROW(1) "release %d, at %u, %u                    \n",
         press->mouse_button,
         press->position.x, press->position.y);
     //
@@ -166,15 +169,17 @@ static void on_drag_begin(const mouse_event_t *const begin,
         void *const param)
 {
     (void) param;
-    printf(ROW(1) "drag %d begin, at %u, %u\n",
+    printf(ROW(1) "drag %d begin, at %u, %u                 \n",
         begin->mouse_button,
         begin->position.x, begin->position.y);
 }
 
 static void on_drag(const mouse_event_t *const begin, const mouse_event_t *const moved, void *const param)
 {
-    canvas_t *canvas = param;
-    printf(ROW(1) "drag %d drag moving to %u, %u\n",
+    tifc_t *tifc = param;
+    canvas_t *canvas = &tifc->canvas;
+
+    printf(ROW(1) "drag %d drag moving to %u, %u            \n",
         begin->mouse_button,
         moved->position.x, moved->position.y);
 
@@ -192,8 +197,10 @@ static void on_drag(const mouse_event_t *const begin, const mouse_event_t *const
 static void on_drag_end(const mouse_event_t *const begin,
         const mouse_event_t *const end, void *const param)
 {
-    canvas_t *canvas = param;
-    printf(ROW(1) "drag %d from %u, %u to %u, %u\n",
+    tifc_t *tifc = param;
+    canvas_t *canvas = &tifc->canvas;
+
+    printf(ROW(1) "drag %d from %u, %u to %u, %u            \n",
         begin->mouse_button,
         begin->position.x, begin->position.y,
         end->position.x, end->position.y);
@@ -213,7 +220,7 @@ static void on_drag_end(const mouse_event_t *const begin,
 static void on_scroll(const mouse_event_t *const scroll, void *const param)
 {
     (void) param;
-    printf(ROW(1) "scroll %d at %u, %u\n",
+    printf(ROW(1) "scroll %d at %u, %u                      \n",
         scroll->mouse_button,
         scroll->position.x, scroll->position.y);
 }
@@ -283,7 +290,7 @@ static void render_grid(transform_comp_t *camera_transform, display_t *const dis
         }
     }
 
-    printf(HOME ERASE_LINE "CAMERA: [%lld, %lld]\n", camera_pos.x, camera_pos.y);
+    printf(HOME "CAMERA: [%lld, %lld]      \n", camera_pos.x, camera_pos.y);
 }
 
 static size_t create_camera(components_t *const components)

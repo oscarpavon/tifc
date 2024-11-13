@@ -64,7 +64,7 @@ canvas_mode_t;
 typedef struct canvas
 {
     components_t components;
-    input_hooks_t input_hooks;
+    input_hooks_t hooks;
     behaviors_t behaviors;
 
     entities ents;
