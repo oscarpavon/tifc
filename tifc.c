@@ -17,7 +17,6 @@ tifc_t tifc_init(void)
         .canvas = canvas_init(),
     };
     canvas_load_objects(&tifc.canvas);
-    display_set_resize_handler(&tifc.display);
     return tifc;
 }
 
@@ -58,43 +57,44 @@ void tifc_render(tifc_t *const tifc)
     display_render(&tifc->display);
 }
 
-void tifc_create_ui_layour(tifc_t *const tifc)
+void tifc_create_ui_layout(tifc_t *const tifc)
 {
     layout_t layout = {
-        .dir = LAYOUT_DIR_HORIZONTAL,
         .align = LAYOUT_ALIGN_TOP,
-        // .min = (disp_pos_t){.y = 0},
-        .max = (disp_pos_t){.y = 2},
+        .size = {.y = 3},
     };
-    ui_add_panel(&tifc->ui, "top", layout, BORDER_STYLE_2);
+    ui_add_panel(&tifc->ui, "top", layout, BORDER_STYLE_4);
 
     layout.align = LAYOUT_ALIGN_LEFT;
-    layout.max = (disp_pos_t){.x = 10};
+    layout.size.x = 10;
     ui_add_panel(&tifc->ui, "left", layout, BORDER_STYLE_3);
 
-    layout.align = LAYOUT_ALIGN_RIGHT;
-    layout.max = (disp_pos_t){.x = 20};
-    ui_add_panel(&tifc->ui, "right", layout, BORDER_STYLE_3);
+    layout.align = LAYOUT_ALIGN_TOP;
+    layout.size.y = 5;
+    ui_add_panel(&tifc->ui, "right-top", layout, BORDER_STYLE_3);
 
     layout.align = LAYOUT_ALIGN_BOT;
-    layout.max = (disp_pos_t){.y = 4};
-    ui_add_panel(&tifc->ui, "bot", layout, BORDER_STYLE_2);
+    layout.size.y = 0;
+    ui_add_panel(&tifc->ui, "right-bot", layout, BORDER_STYLE_3);
 
-    layout.align = LAYOUT_ALIGN_CENTER;
-    layout.max = (disp_pos_t){.x = 10, .y = 10};
-    ui_add_panel(&tifc->ui, "center", layout, BORDER_STYLE_2);
+    ui_recalculate_layout(&tifc->ui, &tifc->display);
 }
 
 int tifc_event_loop(void)
 {
     tifc_t tifc = tifc_init();
-    tifc_create_ui_layour(&tifc);
+    resize_hook_with_data_t resize_hook = {
+        .data = &tifc.ui,
+        .hook = ui_resize_hook,
+    };
+    display_set_resize_handler(&tifc.display, resize_hook);
+    tifc_create_ui_layout(&tifc);
 
     int exit_status = 0;
 
     while (1)
     {
-        input_display_overlay(&tifc.input, (disp_pos_t){.x = 0, .y = 3});
+        // input_display_overlay(&tifc.input, (disp_pos_t){.x = 0, .y = 3});
         tifc_render(&tifc);
         input_hooks_t *hooks = tifc_mode_current_hooks(&tifc);
         exit_status = input_handle_events(&tifc.input, hooks, &tifc);

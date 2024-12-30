@@ -1,8 +1,10 @@
 #include "display.h"
 
+#include <string.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
 #include <signal.h>
+#include <assert.h>
 
 static int prev_buffer(const int active);
 static bool disp_diff(const disp_char_t *const a, const disp_char_t *const b);
@@ -10,15 +12,22 @@ static void display_swap_buffers(display_t *const display);
 static disp_pos_t get_terminal_size(void);
 static void set_border(display_t *const display, wchar_t border_char, disp_pos_t pos, style_t style);
 
-static volatile bool g_resize_detected = false;
+struct resize_handler
+{
+    bool resize_detected;
+    resize_hook_with_data_t resize_hook;
+}
+volatile g_resize_handler;
+
 static void resize_handler(int signo, siginfo_t *info, void *ctx)
 {
     (void) signo; (void) info; (void) ctx;
-    g_resize_detected = true;
+    g_resize_handler.resize_detected = true;
 }
 
-void display_set_resize_handler(display_t *const display)
+void display_set_resize_handler(display_t *const display, resize_hook_with_data_t resize_hook)
 {
+    g_resize_handler.resize_hook = resize_hook;
     struct sigaction action = {0};
     action.sa_sigaction = resize_handler;
     sigaction(SIGWINCH, &action, NULL);
@@ -48,11 +57,15 @@ void display_render_area(display_t *const display, disp_area_t area)
     dispbuf_ptr_t previous = display->buffers[prev];
 
     bool force_reprint = false;
-    if (g_resize_detected)
+    if (g_resize_handler.resize_detected)
     {
         display->size = get_terminal_size();
+
+        volatile resize_hook_with_data_t *resize_hook = &g_resize_handler.resize_hook;
+        resize_hook->hook(display, resize_hook->data);
+
         force_reprint = true;
-        g_resize_detected = false;
+        g_resize_handler.resize_detected = false;
     }
 
     for (unsigned int line = area.first.y;
@@ -122,6 +135,28 @@ void display_fill_area(display_t *const display, style_t style, disp_area_t area
             display_set_char(display, U' ', pos);
         }
     }
+}
+
+void display_draw_string(display_t *const display, unsigned int size, const char string[size], disp_pos_t pos, style_t style)
+{
+    for (unsigned int i = 0; i < size; ++i, ++pos.x)
+    {
+        display_set_char(display, string[i], pos);
+        display_set_style(display, style, pos);
+    }
+}
+
+void display_draw_string_centered(display_t *const display, unsigned int size, const char string[size], disp_area_t area, style_t style)
+{
+    assert(area.second.x <= display->size.x);
+    assert(area.second.y <= display->size.y);
+    unsigned int hmax = area.second.x - area.first.x;
+    assert(size <= hmax);
+    disp_pos_t pos = {
+        .x = area.first.x + (hmax - size) / 2,
+        .y = (area.first.y + area.second.y) / 2,
+    };
+    display_draw_string(display, size, string, pos, style);
 }
 
 static void set_border(display_t *const display, wchar_t border_char, disp_pos_t pos, style_t style)

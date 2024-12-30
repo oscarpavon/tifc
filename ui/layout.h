@@ -13,11 +13,11 @@ typedef enum
     LAYOUT_ALIGN_TOP_H_CENTER   = LAYOUT_ALIGN_TOP
                                 | LAYOUT_ALIGN_LEFT
                                 | LAYOUT_ALIGN_RIGHT,
-    
+
     LAYOUT_ALIGN_BOT_H_CENTER   = LAYOUT_ALIGN_BOT
                                 | LAYOUT_ALIGN_LEFT
                                 | LAYOUT_ALIGN_RIGHT,
-    
+
     LAYOUT_ALIGN_LEFT_V_CENTER  = LAYOUT_ALIGN_LEFT
                                 | LAYOUT_ALIGN_TOP
                                 | LAYOUT_ALIGN_BOT,
@@ -35,26 +35,16 @@ layout_align_t;
 
 typedef enum
 {
-    LAYOUT_CONTENT_DISTRIBUTE = 0,
-    LAYOUT_CONTENT_CENTER,
-    LAYOUT_CONTENT_START,
-    LAYOUT_CONTENT_END,
+    LAYOUT_SIZE_FIXED = 0,
+    LAYOUT_SIZE_RELATIVE
 }
-layout_content_t;
-
-typedef enum
-{
-    LAYOUT_DIR_HORIZONTAL = 0,
-    LAYOUT_DIR_VERTICAL,
-}
-layout_dir_t;
+layout_size_method_t;
 
 typedef struct
 {
-    layout_dir_t    dir;
-    layout_align_t  align;
-    disp_pos_t      min;
-    disp_pos_t      max;
+    layout_align_t       align;
+    layout_size_method_t size_method;
+    disp_pos_t           size;
 }
 layout_t;
 

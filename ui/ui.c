@@ -3,6 +3,7 @@
 #include "display.h"
 #include "sparse.h"
 
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -41,7 +42,7 @@ ui_t ui_init(void)
     {
         exit(EXIT_FAILURE);
     }
-
+    
     return (ui_t) {
         .panels = panels,
         .hooks = hooks_init(),
@@ -53,16 +54,33 @@ void ui_deinit(ui_t *const ui)
     sparse_destroy(ui->panels);
 }
 
+void ui_recalculate_layout(ui_t *const ui, const display_t *const display)
+{
+    disp_area_t bounds = {
+        .first = {0, 0},
+        .second = {display->size.x - 1, display->size.y - 1}
+    };
+    size_t size = sparse_size(ui->panels);
+    for (size_t i = 0; i < size; ++i)
+    {
+        panel_t *panel = sparse_get(ui->panels, i);
+        if (panel)
+        {
+            panel_recalculate_layout(panel, &bounds);
+        }
+    }
+}
+
+void ui_resize_hook(const display_t *const display, void *data)
+{
+    ui_recalculate_layout((ui_t*)data, display);
+}
+
 void ui_render(const ui_t *const ui,
                display_t *const display)
 {
     (void) ui;
-    // TODO 
-
-    screen_space_bounds_t bounds = {
-        .first = {0, 0},
-        .second = {display->size.x - 1, display->size.y - 1}
-    };
+    // TODO
 
     size_t size = sparse_size(ui->panels);
     for (size_t i = 0; i < size; ++i)
@@ -70,11 +88,9 @@ void ui_render(const ui_t *const ui,
         panel_t *panel = sparse_get(ui->panels, i);
         if (panel)
         {
-            panel_render(panel, display, &bounds);
+            panel_render(panel, display);
         }
     }
-    display_set_char(display, U'U', (disp_pos_t){.x=100,.y=0});
-    display_set_char(display, U'I', (disp_pos_t){.x=101,.y=0});
 }
 
 void ui_add_panel(ui_t *const ui,
@@ -82,10 +98,12 @@ void ui_add_panel(ui_t *const ui,
                   layout_t layout,
                   style_t style)
 {
-    (void) sparse_insert_reserve(&ui->panels, ui->last_id++);
-    panel_t *panel = sparse_get(ui->panels, ui->last_id - 1);
+    (void) sparse_insert_reserve(&ui->panels, ui->last_panel_id);
+    panel_t *panel = sparse_get(ui->panels, ui->last_panel_id);
+    ++ui->last_panel_id;
     *panel = (panel_t){
         .title = title,
+        .title_size = strlen(title),
         .layout = layout,
         .style = style,
     };

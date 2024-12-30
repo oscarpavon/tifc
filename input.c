@@ -123,7 +123,7 @@ int input_handle_events(input_t *const input, const input_hooks_t *const hooks, 
     // acquire events
     while (true)
     {
-        events_num = epoll_wait(input->epfd, events, MAX_EVENTS, -1);
+        events_num = epoll_wait(input->epfd, events, MAX_EVENTS, 10);
         if (events_num != -1)
         {
             break; // epoll succeded

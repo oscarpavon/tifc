@@ -2,9 +2,8 @@
 #define _DISPLAY_H_
 
 #include "border.h"
-
 #include <wchar.h>
-#include <string.h>
+
 #include <stdbool.h>
 
 #define DISP_BUFFERS 2
@@ -49,6 +48,13 @@ typedef struct display
 }
 display_t;
 
+typedef struct
+{
+    void *data;
+    void (*hook) (const display_t *const display, void *data);
+}
+resize_hook_with_data_t;
+
 typedef struct disp_area
 {
     disp_pos_t first;
@@ -56,18 +62,52 @@ typedef struct disp_area
 }
 disp_area_t;
 
+void
+display_set_char(display_t *const display,
+        wint_t ch,
+        disp_pos_t pos);
+void 
+display_set_style(display_t *const display,
+        style_t style,
+        disp_pos_t pos);
+void
+display_draw_border(display_t *const display,
+        style_t style,
+        border_set_t border,
+        disp_area_t area);
+void
+display_fill_area(display_t *const display,
+        style_t style,
+        disp_area_t area);
+void
+display_draw_string(display_t *const display,
+        unsigned int size,
+        const char string[size],
+        disp_pos_t pos,
+        style_t style);
+void
+display_draw_string_centered(display_t *const display,
+        unsigned int size,
+        const char string[size],
+        disp_area_t area,
+        style_t style);
+void
+display_render(display_t *const display);
 
-void display_set_resize_handler(display_t *const display);
-void display_set_char(display_t *const display, wint_t ch, disp_pos_t pos);
-void display_set_style(display_t *const display, style_t style, disp_pos_t pos);
-void display_draw_border(display_t *const display, style_t style, border_set_t border, disp_area_t area);
-void display_fill_area(display_t *const display, style_t style, disp_area_t area);
-void display_render(display_t *const display);
-void display_render_area(display_t *const display, disp_area_t area);
+void
+display_render_area(display_t *const display,
+        disp_area_t area);
+void
+display_clear_area(display_t *const display,
+        disp_area_t area);
+
+void 
+display_set_resize_handler(display_t *const display,
+                           resize_hook_with_data_t resize_hook);
+
 void display_clear(display_t *const display);
-void display_erase(void);
-void display_clear_area(display_t *const display, disp_area_t area);
 bool disp_pos_equal(disp_pos_t a, disp_pos_t b);
 disp_area_t normalized_area(disp_area_t area);
+void display_erase(void);
 
 #endif//_DISPLAY_H_

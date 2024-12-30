@@ -73,22 +73,22 @@ void canvas_deinit(canvas_t *const canvas)
 void canvas_load_objects(canvas_t *const canvas)
 {
     canvas->ents.camera_id = create_camera(&canvas->components);
-
-    create_styled_frame(canvas,
-       (vec2_t){.x = 0, .y = 0},
-       (vec2_t){.x = 10, .y = 10},
-       BORDER_STYLE_1
-    );
-    create_styled_frame(canvas,
-       (vec2_t){.x = 50, .y = 10},
-       (vec2_t){.x = 30, .y = 20},
-       BORDER_STYLE_2
-    );
-    create_styled_frame(canvas,
-       (vec2_t){.x = 30, .y = 25},
-       (vec2_t){.x = 22, .y = 16},
-       BORDER_STYLE_3
-    );
+    //
+    // create_styled_frame(canvas,
+    //    (vec2_t){.x = 0, .y = 0},
+    //    (vec2_t){.x = 10, .y = 10},
+    //    BORDER_STYLE_1
+    // );
+    // create_styled_frame(canvas,
+    //    (vec2_t){.x = 50, .y = 10},
+    //    (vec2_t){.x = 30, .y = 20},
+    //    BORDER_STYLE_2
+    // );
+    // create_styled_frame(canvas,
+    //    (vec2_t){.x = 30, .y = 25},
+    //    (vec2_t){.x = 22, .y = 16},
+    //    BORDER_STYLE_3
+    // );
     // Add more objects here
 }
 
