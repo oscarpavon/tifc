@@ -3,11 +3,18 @@
 #include <termio.h>
 #include <unistd.h>
 
+void resize_hook(const display_t *const display, void *data)
+{
+    (void) display;
+    (void) data;
+}
+
 int main(void)
 {
+    resize_hook_with_data_t hook = {.hook = resize_hook};
     display_t display;
     input_enable_mouse();
-    display_set_resize_handler(&display);
+    display_set_resize_handler(&display, hook);
     while (1)
     {
         display_clear(&display);
