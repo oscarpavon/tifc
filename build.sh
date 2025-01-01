@@ -52,30 +52,32 @@ for dir in ${SUB_FOLDERS}; do
     mkdir -p "/tmp/${STAMP_DIR}/$(basename $dir)"
 done
 
-# Build objects from sources
-OBJECTS=""
-for src in ${SOURCES}; do
-    # source -> object
-    OBJ=$(echo ${src} | sed 's/\.c/\.o/g')
+build_objects() {
+    # Build objects from sources
+    OBJECTS=""
+    for src in ${SOURCES}; do
+        # source -> object
+        OBJ=$(echo ${src} | sed 's/\.c/\.o/g')
 
-    # append to object list
-    OBJECTS="${OBJECTS} ${BUILD_DIR}/${OBJ}"
+        # append to object list
+        OBJECTS="${OBJECTS} ${BUILD_DIR}/${OBJ}"
 
-    NEW_STAMP="/tmp/${STAMP_DIR}/${src}.sha1"
-    OLD_STAMP="${STAMP_DIR}/${src}.sha1"
+        NEW_STAMP="/tmp/${STAMP_DIR}/${src}.sha1"
+        OLD_STAMP="${STAMP_DIR}/${src}.sha1"
 
-    sha1sum ${src} > ${NEW_STAMP} # recalculate stamp
+        sha1sum ${src} > ${NEW_STAMP} # recalculate stamp
 
-    if [ -e "${OLD_STAMP}" ] && [ -z $(diff -q ${NEW_STAMP} ${OLD_STAMP}) ]; then
-        : "Skip ${OBJ}"
-    else
-        # compile
-        COMMAND="${CC} ${CPPFLAGS} ${CFLAGS} -c ${src} -o ${BUILD_DIR}/${OBJ}"
-        ${COMMAND} && echo ${COMMAND}
-        cp ${NEW_STAMP} ${OLD_STAMP} # refresh stamp
-    fi
-done
-echo "OBJECTS: ${OBJECTS}"
+        if [ -e "${OLD_STAMP}" ] && [ -z $(diff -q ${NEW_STAMP} ${OLD_STAMP}) ]; then
+            echo Skip ${OBJ}
+        else
+            # compile
+            COMMAND="${CC} ${CPPFLAGS} ${CFLAGS} -c ${src} -o ${BUILD_DIR}/${OBJ}"
+            ${COMMAND} && echo ${COMMAND}
+            cp ${NEW_STAMP} ${OLD_STAMP} # refresh stamp
+        fi
+    done
+    #echo "OBJECTS: ${OBJECTS}"
+}
 
 LIBS="
     -lcircbuf_static
@@ -89,6 +91,7 @@ LIBS="
 OPTION=${1:-'compile'}
 case ${OPTION} in
     "compile")
+        build_objects
         gcc ${CPPFLAGS} ${CFLAGS} ${OBJECTS} ${LIBS} -o ${BUILD_DIR}/tifc
     ;;
     "clean")
