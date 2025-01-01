@@ -23,7 +23,6 @@ CFLAGS="
 CPPFLAGS="
     -Ldeps
     -Ideps
-    -Iui
     -I.
 "
 
@@ -40,6 +39,9 @@ for dir in ${SUB_FOLDERS}; do
 
     imports=$(${dir}/import.sh)
     eval ${imports}
+
+    # add subfolder to includes
+    CPPFLAGS="${CPPFLAGS} -I${dir}"
 
     mkdir -p ${BUILD_DIR}/$(basename $dir)
 done
