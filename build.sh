@@ -1,9 +1,13 @@
 #!/bin/sh
-set -xe
+#set -xe
+
+ROOT_DIR="$(dirname $0)"
+cd ${ROOT_DIR} # enter project dir
 
 CC="gcc"
 
 BUILD_DIR="./build"
+STAMP_DIR="${BUILD_DIR}/.stamps"
 
 SUB_FOLDERS="
     display
@@ -44,6 +48,8 @@ for dir in ${SUB_FOLDERS}; do
     CPPFLAGS="${CPPFLAGS} -I${dir}"
 
     mkdir -p ${BUILD_DIR}/$(basename $dir)
+    mkdir -p ${STAMP_DIR}/$(basename $dir)
+    mkdir -p "/tmp/${STAMP_DIR}/$(basename $dir)"
 done
 
 # Build objects from sources
@@ -55,8 +61,19 @@ for src in ${SOURCES}; do
     # append to object list
     OBJECTS="${OBJECTS} ${BUILD_DIR}/${OBJ}"
 
-    # compile
-    ${CC} ${CPPFLAGS} ${CFLAGS} -c ${src} -o ${BUILD_DIR}/${OBJ}
+    NEW_STAMP="/tmp/${STAMP_DIR}/${src}.sha1"
+    OLD_STAMP="${STAMP_DIR}/${src}.sha1"
+
+    sha1sum ${src} > ${NEW_STAMP} # recalculate stamp
+
+    if [ -e "${OLD_STAMP}" ] && [ -z $(diff -q ${NEW_STAMP} ${OLD_STAMP}) ]; then
+        : "Skip ${OBJ}"
+    else
+        # compile
+        COMMAND="${CC} ${CPPFLAGS} ${CFLAGS} -c ${src} -o ${BUILD_DIR}/${OBJ}"
+        ${COMMAND} && echo ${COMMAND}
+        cp ${NEW_STAMP} ${OLD_STAMP} # refresh stamp
+    fi
 done
 echo "OBJECTS: ${OBJECTS}"
 
@@ -76,5 +93,8 @@ case ${OPTION} in
     ;;
     "clean")
         rm -rf ${BUILD_DIR}
+        rm -rf ${STAMP_DIR}
     ;;
 esac
+
+cd - #leave project dir
