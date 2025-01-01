@@ -15,6 +15,7 @@
 
 !ui
 !display
+!tests
 
 # libs softlinks
 !deps/*.a
