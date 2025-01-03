@@ -2,24 +2,16 @@
 #set -xe
 
 ROOT_DIR="$(dirname $0)"
-cd ${ROOT_DIR} # enter project dir
-
 CC="gcc"
 
 BUILD_DIR="./build"
 STAMP_DIR="${BUILD_DIR}/.stamps"
 
-list() {
-    echo $@
-}
+list() { echo $@ ;}
 
-SUB_FOLDERS=$(list "
+SUBDIRS=$(list "
     display
     ui
-")
-
-TEST_DIRS=$(list "
-    tests
 ")
 
 CFLAGS=$(list "
@@ -54,145 +46,169 @@ LIBS=$(list "
     -lm
 ")
 
-# Import subfolders
-for dir in ${SUB_FOLDERS}; do
-    #echo "Sub folder: ${dir}"
-
-    imports=$(${dir}/import.sh)
-    eval ${imports}
-
-    # add subfolder to includes
-    CPPFLAGS="${CPPFLAGS} -I${dir}"
-
-    mkdir -p ${BUILD_DIR}/$(basename $dir)
-    mkdir -p ${STAMP_DIR}/$(basename $dir)
-    mkdir -p "/tmp/${STAMP_DIR}/$(basename $dir)"
-done
-
-for dir in ${TEST_DIRS}; do
-    mkdir -p "${BUILD_DIR}/$(basename $dir)"
-    mkdir -p ${STAMP_DIR}/$(basename $dir)
-    mkdir -p "/tmp/${STAMP_DIR}/$(basename $dir)"
-done
+init_subdirs() {
+    for dir in ${SUBDIRS}; do
+        CPPFLAGS="${CPPFLAGS} -I${dir}"
+        mkdir -p ${BUILD_DIR}/$(basename $dir)
+        mkdir -p ${STAMP_DIR}/$(basename $dir)
+        mkdir -p "/tmp/${STAMP_DIR}/$(basename $dir)"
+    done
+}
 
 build_objects() {
     # Build objects from sources
-    OBJECTS=""
-    for src in ${1:-$SOURCES}; do
+    local objects=""
+    for src in $@; do
         # source -> object
-        OBJ=$(echo ${src} | sed 's/\.c/\.o/g')
+        local obj=$(echo ${src} | sed 's/\.c/\.o/g')
+        local deps=$( collect_dependencies ${src} )
 
         # append to object list
-        OBJECTS="${OBJECTS} ${BUILD_DIR}/${OBJ}"
+        objects="${objects} ${BUILD_DIR}/${obj}"
 
-        NEW_STAMP="/tmp/${STAMP_DIR}/${src}.sha1"
-        OLD_STAMP="${STAMP_DIR}/${src}.sha1"
+        local stamp="${STAMP_DIR}/${src}.sha1"
 
-        sha1sum ${src} > ${NEW_STAMP} # recalculate stamp
-
-        if [ -e "${OLD_STAMP}" ] && [ -z $(diff -q ${NEW_STAMP} ${OLD_STAMP}) ]; then
-            : Skip ${OBJ}
+        if [ -e "${stamp}" ] \
+        && [ 0 = $(sha1sum -c --status ${stamp}; echo $?) ]; then
+            : echo "skipping ${obj}" >&2
         else
             # compile
-            COMMAND="${CC} ${CPPFLAGS} ${CFLAGS} -c ${src} -o ${BUILD_DIR}/${OBJ}"
-            ${COMMAND} && echo ${COMMAND}
-            cp ${NEW_STAMP} ${OLD_STAMP} # refresh stamp
+            local cmd="${CC} ${CPPFLAGS} ${CFLAGS} -c ${src} -o ${BUILD_DIR}/${obj}"
+            ${cmd} || return $? # return on failure
+            echo "${cmd}" >&2
+            sha1sum ${deps} > ${stamp} # recalculate stamp
         fi
     done
-    #echo "${OBJECTS}"
+    echo "${objects}"
 }
 
 collect_tests() {
     # collect tests
-    TESTS=""
-    for test_dir in ${TEST_DIRS}; do
-        for _test in ${test_dir}/*.c; do
-            TESTS="${TESTS} ${_test}"
+    local tests=""
+    for dir in ${SUBDIRS}; do
+        for _test_ in ${dir}/*_test.c; do
+            tests="${tests} ${_test_}"
         done
     done
+    echo "$tests"
 }
 
-# Function takes source file path and returns list headers it depends on
-get_dep_headers() {
-    [ -z $1 ] && echo '!! get_dep_headers(): expects non-empty args' >&2 && exit 1
-    wait
-    HEADERS=$(${CC} ${CPPFLAGS} -MM $1 | sed "s/.*://; s/ [\\\\]//g;")
-    echo "$HEADERS"
+collect_dependencies() {
+    [ $# = 0 ] && { echo "! collect_dependencies() expects source. " >&2 && exit 1 ;}
+
+    # get list of header separated with space
+    local dependencies=$( ${CC} ${CPPFLAGS} -MM $1 | tr -d '\n' \
+        | sed 's/ [\]//g;' \
+        | sed 's/.*: //g' \
+        | xargs -n1 | sort -u | xargs )
+
+    echo ${dependencies}
 }
 
-# Function takes source path and returns list sources it depends on
-get_dep_sources() {
-    [ -z $1 ] && echo '!! get_dep_sources(): expects non-empty args' >&2 && exit 1
-    HEADERS=$(get_dep_headers $1)
-    for header in ${HEADERS} ; do
-        src=$(echo ${header} | sed 's/\.h/\.c/g')
-        [ -e "./${src}" ] && echo "${src}"
+h2c() {
+    local dep_sources=""
+    for header in "$@"; do
+        local src=$(echo ${header} | sed 's/\.h/\.c/')
+        [ -e ${src} -a ${source} != ${src} ] && dep_sources="${dep_sources} ${src}"
     done
+    echo ${dep_sources}
 }
 
-get_dep_objects() {
-    [ -z $1 ] && echo '!! get_dep_objects(): expects non-empty args' >&2 && exit 1
-    echo $(get_dep_sources $1) | sed 's/\.c/\.o/g'
-}
+# Function takes executable source file path
+# and returns a compile command
+build_executable() {
+    [ $# = 0 ] && { echo "! build_executable() expects source. " >&2 && exit 1 ;}
+    local source="$1"
 
+    local target=$( echo "${source}" | sed 's/\.c//')
+    echo "Target: $target" >&2
+
+    local deps=$( collect_dependencies ${source} )
+    local sources="${source} $( h2c ${deps} )"
+    local stamp="${STAMP_DIR}/${target}.sha1"
+
+    local objects=$( build_objects ${sources} )
+    [ $? != 0 ] && return $?
+
+    if [ -e "${stamp}" ] \
+    && [ 0 = $( sha1sum -c --status "${stamp}"; echo $? ) ]; then
+        echo "Nothing to be done for target '${target}'" >&2
+    else
+        # compile
+        local cmd="${CC} ${CPPFLAGS} ${CFLAGS} ${objects} -o ${BUILD_DIR}/${target} ${LIBS}"
+        ${cmd} || return $? # return on failure
+        echo ${cmd} >&2
+
+        local obj_stamps=$( for src in ${sources}; do echo "${STAMP_DIR}/${src}.sha1"; done )
+        sha1sum ${obj_stamps} > ${stamp}
+    fi
+
+    return 0
+}
 
 help() {
-    COMPILE_DESC="compile [<target>] - compile specific target. default target: 'tifc'"
-    CLEAN_DESC="clean              - Remove all build artifacts."
-    HELP_DESC="help               - show this help menu."
+    local compile_desc="compile [<target>] - compile specific target. default target: 'tifc'"
+    local clean_desc="clean              - Remove all build artifacts."
+    local help_desc="help               - show this help menu."
     case "$1" in
-        compile) echo "${COMPILE_DESC}"
-                 echo "Available targets:\n\ttifc\n\ttests"
+        compile)
+            echo "${compile_desc}"
+            echo "Available targets:\n\ttifc\n\ttests"
         ;;
-        clean)   echo "\t${CLEAN_DESC}"
+        clean)
+            echo "\t${clean_desc}"
         ;;
-        help)    echo "\t${HELP_DESC}"
+        help)
+            echo "\t${help_desc}"
         ;;
-        *)       echo "Available sub-commands:"
-                 echo "\t${COMPILE_DESC}"
-                 echo "\t${CLEAN_DESC}"
-                 echo "\t${HELP_DESC}"
+        *)
+            echo "Available sub-commands:"
+            echo "\t${compile_desc}"
+            echo "\t${clean_desc}"
+            echo "\t${help_desc}"
         ;;
     esac
 }
 
-SUB_CMD=${1:-'compile'}
-case "${SUB_CMD}" in
-    compile)
-        TARGET=${2:-'tifc'}
-        case "$TARGET" in
-            tifc)
-                build_objects
-                COMMAND="${CC} ${CPPFLAGS} ${CFLAGS} ${OBJECTS} ${LIBS} -o ${BUILD_DIR}/tifc"
-                echo "${COMMAND}"
-            ;;
-            tests)
-                collect_tests
-                echo "collected tests: $TESTS"
-                for _test in ${TESTS}; do
-                    SOURCES=$(get_dep_sources $_test)
-                    echo "DEP SOURCES: ${SOURCES}"
-                    TARGET=$(echo ${SOURCES} | cut -f1 -d' ' | sed 's/\.c//g')
-                    build_objects "${SOURCES}"
-                    COMMAND="${CC} ${CFLAGS} ${CPPFLAGS} ${OBJECTS} ${LIBS} -o ${BUILD_DIR}/${TARGET}"
-                    echo "${COMMAND}" && $(${COMMAND})
-                done
-            ;;
-            *) echo "ERROR : Wrong compile target '$2'" >&2
-            ;;
-        esac
-    ;;
-    clean)
-        rm -rf ${BUILD_DIR}
-        rm -rf ${STAMP_DIR}
-    ;;
-    help)
-        help $2
-    ;;
-    *)
-        echo "ERROR : Wrong sub-command '$SUB_CMD'" >&2
-        help ${SUB_CMD} >&2
-    ;;
-esac
+main() {
+    local sub_cmd=${1:-'compile'}
+    case "${sub_cmd}" in
+        compile)
+            local target=${2:-'tifc'}
+            case "$target" in
+                tifc)
+                    { build_executable 'tifc.c' ;}
+                    [ $? != 0 ] && exit $?
+                ;;
+                tests)
+                    local tests=$( collect_tests )
+                    for _test_ in ${tests}; do
+                        { build_executable ${_test_} ;}
+                    done
+                ;;
+                *) echo "ERROR : Wrong compile target '$2'" >&2
+                ;;
+            esac
+        ;;
+        clean)
+            local cmd="rm -rf ${BUILD_DIR}"
+            echo "${cmd}"
+            $($cmd)
+        ;;
+        help)
+            { help $2 ;}
+        ;;
+        *)
+            echo "ERROR : Wrong sub-command '${sub_cmd}'" >&2
+            { help ${sub_cmd} >&2 ;}
+        ;;
+    esac
+}
 
-cd - > /dev/null # leave project dir
+{
+    cd ${ROOT_DIR}      # enter project dir
+    init_subdirs
+    main $@
+    cd - > /dev/null    # leave project dir
+}
+
