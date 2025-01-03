@@ -54,13 +54,6 @@ init_subdirs() {
     done
 }
 
-time_stamps() {
-    local stamps=''
-    for f in $@; do
-        stamps="${stamps} $(stat -c '%Y' ${f})"
-    done
-    echo "${stamps}"
-}
 
 # Compare first 'ts' vs list of 'ts' that comes after.
 # Return: '1' if any of the 'ts' in a list is newer than the first 'ts',
