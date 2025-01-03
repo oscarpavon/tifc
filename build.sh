@@ -51,7 +51,6 @@ init_subdirs() {
         CPPFLAGS="${CPPFLAGS} -I${dir}"
         mkdir -p ${BUILD_DIR}/$(basename $dir)
         mkdir -p ${STAMP_DIR}/$(basename $dir)
-        mkdir -p "/tmp/${STAMP_DIR}/$(basename $dir)"
     done
 }
 
