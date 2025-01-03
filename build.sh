@@ -56,9 +56,41 @@ init_subdirs() {
 }
 
 time_stamps() {
+    local stamps=''
     for f in $@; do
-        echo "$(stat -c '%Y' ${f}) : ${f}"
+        stamps="${stamps} $(stat -c '%Y' ${f})"
     done
+    echo "${stamps}"
+}
+
+# Compare first 'ts' vs list of 'ts' that comes after.
+# Return: '1' if any of the 'ts' in a list is newer than the first 'ts',
+#         otherwise '0'
+is_newer_source() {
+    [ ${#} -lt 2 ] \
+        && echo "! is_newer_source() expects (object, dep[, ...])" >&2 \
+        && return 0
+
+    local object=${1}; shift
+    for dep in ${@}; do
+        [ ${object} -ot ${dep} ] && return 1
+    done
+    return 0
+}
+
+check() {
+    [ ${#} -eq 0 ] \
+        && echo "! check() expects an object" >&2 \
+        && exit 1
+
+    local obj=${1}
+    local obj_path="${BUILD_DIR}/${1}"
+    [ ! -e ${obj_path} ] \
+        && echo "No such object '${obj_path}'" >&2 \
+        && return 1
+
+    local sum="${STAMP_DIR}/${obj}.sha1"
+    { sha1sum -c ${sum} >&2 && return 0 || return 1 ;}
 }
 
 build_objects() {
@@ -67,38 +99,25 @@ build_objects() {
     for src in $@; do
         # source -> object
         local obj=$(echo ${src} | sed 's/\.c/\.o/g')
+        local obj_path="${BUILD_DIR}/${obj}"
         local deps=$( collect_dependencies ${src} )
-        local sum="${STAMP_DIR}/${src}.sha1"
-        local ts="${STAMP_DIR}/${src}.ts"
+        local sum="${STAMP_DIR}/${obj}.sha1"
 
         # append to object list
-        objects="${objects} ${BUILD_DIR}/${obj}"
+        objects="${objects} ${obj_path}"
 
-        if [ -e ${BUILD_DIR}/${obj} ]; then
-            # timestamp
-            if [ -e "${ts}" ] \
-            && [ 0 = $( time_stamps ${src} | diff -q - ${ts} > /dev/null; echo $? ) ]; then
-                echo "ts unmodified: ${obj}" >&2
-                continue
-            fi
-
-            # checksum
-            if [ -e "${sum}" ] \
-            && [ 0 = $( sha1sum -c --status ${sum}; echo $? ) ]; then
-                echo "source unchanged ${obj}" >&2
-                time_stamps ${src} > ${ts} # recalculate ts
-                continue
-            fi
+        if [ -e ${obj_path} ]; then
+            # is newer source
+            [ 0 = $( is_newer_source ${obj_path} ${deps}; echo $? ) ] && continue
         fi
 
         # compile
-        local cmd="${CC} ${CPPFLAGS} ${CFLAGS} -c ${src} -o ${BUILD_DIR}/${obj}"
+        local cmd="${CC} ${CPPFLAGS} ${CFLAGS} -c ${src} -o ${obj_path}"
         ${cmd} || return $? # return on failure
         echo "${cmd}" >&2
         sha1sum ${deps} > ${sum} # recalculate sum
-        time_stamps ${src} > ${ts} # recalculate ts
     done
-    echo "${objects}"
+    echo ${objects}
 }
 
 collect_tests() {
@@ -109,7 +128,7 @@ collect_tests() {
             tests="${tests} ${_test_}"
         done
     done
-    echo "$tests"
+    echo ${tests}
 }
 
 collect_dependencies() {
@@ -136,43 +155,51 @@ h2c() {
 # Function takes executable source file path
 # and returns a compile command
 build_executable() {
-    [ $# = 0 ] && { echo "! build_executable() expects source. " >&2 && exit 1 ;}
+    [ $# -eq 0 ] && { echo "! build_executable() expects source. " >&2 && exit 1 ;}
     local source="$1"
-
     local target=$( echo "${source}" | sed 's/\.c//')
     echo "Target: $target" >&2
 
     local deps=$( collect_dependencies ${source} )
     local sources="${source} $( h2c ${deps} )"
-    local stamp="${STAMP_DIR}/${target}.sha1"
+    local sum="${STAMP_DIR}/${target}.sha1"
 
     local objects=$( build_objects ${sources} )
     [ $? != 0 ] && return $?
 
-    if [ -e "${stamp}" ] \
-    && [ 0 = $( sha1sum -c --status "${stamp}"; echo $? ) ]; then
+    # is newer source
+    if [ -e ${BUILD_DIR}/${target} ] \
+    && [ 0 = $( is_newer_source ${BUILD_DIR}/${target} ${deps}; echo $? ) ]; then
         echo "Nothing to be done for target '${target}'" >&2
-    else
-        # compile
-        local cmd="${CC} ${CPPFLAGS} ${CFLAGS} ${objects} -o ${BUILD_DIR}/${target} ${LIBS}"
-        ${cmd} || return $? # return on failure
-        echo ${cmd} >&2
-
-        local obj_stamps=$( for src in ${sources}; do echo "${STAMP_DIR}/${src}.sha1"; done )
-        sha1sum ${obj_stamps} > ${stamp}
+        return 0
     fi
+
+    truncate -s 0 ${sum}
+    local obj_sums=$( echo "$objects" \
+        | sed "s@${BUILD_DIR}@${STAMP_DIR}@g" \
+        | sed "s@\s\|\$@.sha1 @g" )
+    sort -m -u -k2 ${obj_sums} -o ${sum}
+
+    # compile
+    local cmd="${CC} ${CPPFLAGS} ${CFLAGS} ${objects} -o ${BUILD_DIR}/${target} ${LIBS}"
+    ${cmd} || return $? # return on failure
+    echo ${cmd} >&2
 
     return 0
 }
 
 help() {
-    local compile_desc="compile [<target>] - compile specific target. default target: 'tifc'"
-    local clean_desc="clean              - Remove all build artifacts."
-    local help_desc="help               - show this help menu."
+    local compile_desc="compile [<target>]      - compile specific target. default target: 'tifc'"
+    local check_desc="check [<target|object>] - check sum of the dependencies."
+    local clean_desc="clean                   - Remove all build artifacts."
+    local help_desc="help                    - show this help menu."
     case "$1" in
         compile)
             echo "${compile_desc}"
             echo "Available targets:\n\ttifc\n\ttests"
+        ;;
+        check)
+            echo "\t${check_desc}"
         ;;
         clean)
             echo "\t${clean_desc}"
@@ -190,7 +217,7 @@ help() {
 }
 
 main() {
-    local sub_cmd=${1:-'compile'}
+    local sub_cmd=${1:-'help'}
     case "${sub_cmd}" in
         compile)
             local target=${2:-'tifc'}
@@ -208,6 +235,10 @@ main() {
                 *) echo "ERROR : Wrong compile target '$2'" >&2
                 ;;
             esac
+        ;;
+        check)
+            local target=${2}
+            { check ${target} ;}
         ;;
         clean)
             local cmd="rm -rf ${BUILD_DIR}"
