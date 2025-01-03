@@ -4,6 +4,7 @@
 #include "layout.h"
 #include "input.h"
 #include "sparse.h"
+#include "panel.h"
 
 typedef struct
 {
