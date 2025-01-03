@@ -55,6 +55,12 @@ init_subdirs() {
     done
 }
 
+time_stamps() {
+    for f in $@; do
+        echo "$(stat -c '%Y' ${f}) : ${f}"
+    done
+}
+
 build_objects() {
     # Build objects from sources
     local objects=""
@@ -62,22 +68,35 @@ build_objects() {
         # source -> object
         local obj=$(echo ${src} | sed 's/\.c/\.o/g')
         local deps=$( collect_dependencies ${src} )
+        local sum="${STAMP_DIR}/${src}.sha1"
+        local ts="${STAMP_DIR}/${src}.ts"
 
         # append to object list
         objects="${objects} ${BUILD_DIR}/${obj}"
 
-        local stamp="${STAMP_DIR}/${src}.sha1"
+        if [ -e ${BUILD_DIR}/${obj} ]; then
+            # timestamp
+            if [ -e "${ts}" ] \
+            && [ 0 = $( time_stamps ${src} | diff -q - ${ts} > /dev/null; echo $? ) ]; then
+                echo "ts unmodified: ${obj}" >&2
+                continue
+            fi
 
-        if [ -e "${stamp}" ] \
-        && [ 0 = $(sha1sum -c --status ${stamp}; echo $?) ]; then
-            : echo "skipping ${obj}" >&2
-        else
-            # compile
-            local cmd="${CC} ${CPPFLAGS} ${CFLAGS} -c ${src} -o ${BUILD_DIR}/${obj}"
-            ${cmd} || return $? # return on failure
-            echo "${cmd}" >&2
-            sha1sum ${deps} > ${stamp} # recalculate stamp
+            # checksum
+            if [ -e "${sum}" ] \
+            && [ 0 = $( sha1sum -c --status ${sum}; echo $? ) ]; then
+                echo "source unchanged ${obj}" >&2
+                time_stamps ${src} > ${ts} # recalculate ts
+                continue
+            fi
         fi
+
+        # compile
+        local cmd="${CC} ${CPPFLAGS} ${CFLAGS} -c ${src} -o ${BUILD_DIR}/${obj}"
+        ${cmd} || return $? # return on failure
+        echo "${cmd}" >&2
+        sha1sum ${deps} > ${sum} # recalculate sum
+        time_stamps ${src} > ${ts} # recalculate ts
     done
     echo "${objects}"
 }
