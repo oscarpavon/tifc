@@ -11,6 +11,7 @@ list() { echo $@ ;}
 
 SUBDIRS=$(list "
     display
+    input
     ui
 ")
 
@@ -33,7 +34,6 @@ CPPFLAGS=$(list "
 SOURCES=$(list "
     tifc.c
     canvas.c
-    input.c
     frame.c
 ")
 
