@@ -151,11 +151,18 @@ void display_draw_string_centered(display_t *const display, unsigned int size, c
     assert(area.second.x <= display->size.x);
     assert(area.second.y <= display->size.y);
     unsigned int hmax = area.second.x - area.first.x;
-    assert(size <= hmax);
-    disp_pos_t pos = {
-        .x = area.first.x + (hmax - size) / 2,
-        .y = (area.first.y + area.second.y) / 2,
-    };
+    disp_pos_t pos = {.y = (area.first.y + area.second.y) / 2};
+
+    if (hmax <= size) // string doesnt fit fully in the area
+    {
+        pos.x = area.first.x;
+        size = hmax;
+    }
+    else // calculate padding
+    {
+        pos.x = area.first.x + (hmax - size) / 2;
+    }
+
     display_draw_string(display, size, string, pos, style);
 }
 
