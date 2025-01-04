@@ -87,6 +87,7 @@ check() {
 
 build_objects() {
     # Build objects from sources
+    local compiled=0
     local objects=""
     for src in $@; do
         # source -> object
@@ -102,14 +103,16 @@ build_objects() {
             # is newer source
             [ 0 = $( is_newer_source ${obj_path} ${deps}; echo $? ) ] && continue
         fi
-
+ 
         # compile
         local cmd="${CC} ${CPPFLAGS} ${CFLAGS} -c ${src} -o ${obj_path}"
         ${cmd} || return $? # return on failure
         echo "${cmd}" >&2
         sha1sum ${deps} > ${sum} # recalculate sum
+
+        compiled=$(( $compiled + 1 ))
     done
-    echo ${objects}
+    echo ${compiled}
 }
 
 collect_tests() {
@@ -154,14 +157,17 @@ build_executable() {
 
     local deps=$( collect_dependencies ${source} )
     local sources="${source} $( h2c ${deps} )"
+    local objects=$(echo ${sources} | sed "s/\.c/\.o/g; s@\([./a-zA-Z0-9~$]\+\)@${BUILD_DIR}/\1@g")
     local sum="${STAMP_DIR}/${target}.sha1"
-
-    local objects=$( build_objects ${sources} )
+    local compiled=$( build_objects ${sources} )
     [ $? != 0 ] && return $?
 
+    echo "Compiled: $compiled" >&2
     # is newer source
-    if [ -e ${BUILD_DIR}/${target} ] \
-    && [ 0 = $( is_newer_source ${BUILD_DIR}/${target} ${deps}; echo $? ) ]; then
+    if [ ${compiled} -eq 0 ] \
+    && [ -e ${BUILD_DIR}/${target} ] \
+    && [ 0 = $( is_newer_source ${BUILD_DIR}/${target} ${deps}; echo $? ) ]
+    then
         echo "Nothing to be done for target '${target}'" >&2
         return 0
     fi
