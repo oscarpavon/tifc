@@ -76,9 +76,18 @@ static disp_area_t
 calc_panel_area(const layout_t *const layout,
                 disp_area_t *const bounds)
 {
-    const disp_pos_t *const max = &layout->size;
     unsigned int horizontal_size = bounds->second.x - bounds->first.x;
     unsigned int vertical_size = bounds->second.y - bounds->first.y;
+    unsigned int width = layout->size.x;
+    unsigned int height = layout->size.y;
+
+    if (layout->size_method == LAYOUT_SIZE_RELATIVE)
+    {
+        assert(width <= 100); // percent
+        assert(height <= 100);
+        width = horizontal_size * width / 100;
+        height = vertical_size * height / 100;
+    }
 
     if (horizontal_size == 0 || vertical_size == 0)
     {
@@ -90,51 +99,51 @@ calc_panel_area(const layout_t *const layout,
     if (LAYOUT_ALIGN_CENTER == layout->align
         || 0 == layout->align)
     {
-        centralize_vertical(vertical_size, max->y, &panel_area, bounds);
-        centralize_horizontal(horizontal_size, max->x, &panel_area, bounds);
+        centralize_vertical(vertical_size, height, &panel_area, bounds);
+        centralize_horizontal(horizontal_size, width, &panel_area, bounds);
         *bounds = (disp_area_t){0}; /* no free space left */
     }
     else if (LAYOUT_ALIGN_TOP_H_CENTER == layout->align)
     {
-        centralize_horizontal(horizontal_size, max->x, &panel_area, bounds);
-        dock_to_top(vertical_size, max->y, &panel_area, bounds);
+        centralize_horizontal(horizontal_size, width, &panel_area, bounds);
+        dock_to_top(vertical_size, height, &panel_area, bounds);
     }
     else if (LAYOUT_ALIGN_BOT_H_CENTER == layout->align)
     {
-        centralize_horizontal(horizontal_size, max->x, &panel_area, bounds);
-        dock_to_bot(vertical_size, max->y, &panel_area, bounds);
+        centralize_horizontal(horizontal_size, width, &panel_area, bounds);
+        dock_to_bot(vertical_size, height, &panel_area, bounds);
     }
     else if (LAYOUT_ALIGN_LEFT_V_CENTER == layout->align)
     {
-        centralize_vertical(vertical_size, max->y, &panel_area, bounds);
-        dock_to_left(horizontal_size, max->x, &panel_area, bounds);
+        centralize_vertical(vertical_size, height, &panel_area, bounds);
+        dock_to_left(horizontal_size, width, &panel_area, bounds);
     }
     else if (LAYOUT_ALIGN_RIGHT_V_CENTER == layout->align)
     {
-        centralize_vertical(vertical_size, max->y, &panel_area, bounds);
-        dock_to_right(horizontal_size, max->x, &panel_area, bounds);
+        centralize_vertical(vertical_size, height, &panel_area, bounds);
+        dock_to_right(horizontal_size, width, &panel_area, bounds);
     }
     else if ((LAYOUT_ALIGN_TOP | LAYOUT_ALIGN_BOT) & layout->align)
     {
         fill_horizontal(&panel_area, bounds);
-        if (max->y == 0)
+        if (height == 0)
         {
             fill_vertical(&panel_area, bounds);
         }
         else (LAYOUT_ALIGN_TOP & layout->align)
-            ? dock_to_top(vertical_size, max->y, &panel_area, bounds)
-            : dock_to_bot(vertical_size, max->y, &panel_area, bounds);
+            ? dock_to_top(vertical_size, height, &panel_area, bounds)
+            : dock_to_bot(vertical_size, height, &panel_area, bounds);
     }
     else if ((LAYOUT_ALIGN_LEFT | LAYOUT_ALIGN_RIGHT) & layout->align)
     {
         fill_vertical(&panel_area, bounds);
-        if (max->x == 0)
+        if (width == 0)
         {
             fill_horizontal(&panel_area, bounds);
         }
         else (LAYOUT_ALIGN_LEFT & layout->align)
-            ? dock_to_left(horizontal_size, max->x, &panel_area, bounds)
-            : dock_to_right(horizontal_size, max->x, &panel_area, bounds);
+            ? dock_to_left(horizontal_size, width, &panel_area, bounds)
+            : dock_to_right(horizontal_size, width, &panel_area, bounds);
     }
 
     return panel_area;
