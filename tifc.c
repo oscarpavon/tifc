@@ -61,16 +61,17 @@ void tifc_create_ui_layout(tifc_t *const tifc)
 {
     layout_t layout = {
         .align = LAYOUT_ALIGN_TOP,
-        .size = {.y = 3},
+        .size_method = LAYOUT_SIZE_RELATIVE,
+        .size = {.y = 50},
     };
     ui_add_panel(&tifc->ui, "top", layout, BORDER_STYLE_4);
 
     layout.align = LAYOUT_ALIGN_LEFT;
-    layout.size.x = 10;
+    layout.size.x = 50;
     ui_add_panel(&tifc->ui, "left", layout, BORDER_STYLE_3);
 
     layout.align = LAYOUT_ALIGN_TOP;
-    layout.size.y = 5;
+    layout.size.y = 50;
     ui_add_panel(&tifc->ui, "right-top", layout, BORDER_STYLE_3);
 
     layout.align = LAYOUT_ALIGN_BOT;
