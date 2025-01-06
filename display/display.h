@@ -1,6 +1,7 @@
 #ifndef _DISPLAY_H_
 #define _DISPLAY_H_
 
+#include "display_types.h"
 #include "border.h"
 #include <wchar.h>
 
@@ -18,13 +19,6 @@
 #define HIDE_CURSOR ESC "[?25l"
 #define SHOW_CURSOR ESC "[?25h"
 #define ERASE_LINE  ESC "[K"
-
-typedef struct
-{
-    unsigned int x;
-    unsigned int y;
-}
-disp_pos_t;
 
 typedef struct
 {
@@ -55,12 +49,6 @@ typedef struct
 }
 resize_hook_with_data_t;
 
-typedef struct disp_area
-{
-    disp_pos_t first;
-    disp_pos_t second;
-}
-disp_area_t;
 
 void
 display_set_char(display_t *const display,
