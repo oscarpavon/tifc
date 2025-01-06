@@ -7,19 +7,27 @@
 
 typedef struct
 {
-    const char   *title;
-    unsigned int  title_size;
-    layout_t      layout;
-    style_t       style;
-    disp_area_t   area;
-    grid_t        grid;
+    layout_align_t       align;
+    layout_size_method_t size_method;
+    disp_pos_t           size;
+}
+panel_layout_t;
+
+typedef struct
+{
+    const char    * title;
+    unsigned int    title_size;
+    panel_layout_t  layout;
+    style_t         style;
+    disp_area_t     area;
+    grid_t          grid;
 }
 panel_t;
 
 typedef struct
 {
-    const char *title;
-    layout_t    layout;
+    const char     * title;
+    panel_layout_t   layout;
 }
 panel_opts_t;
 

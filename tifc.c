@@ -59,7 +59,7 @@ void tifc_render(tifc_t *const tifc)
 
 void tifc_create_ui_layout(tifc_t *const tifc)
 {
-    layout_t layout = {
+    panel_layout_t layout = {
         .align = LAYOUT_ALIGN_TOP,
         .size_method = LAYOUT_SIZE_RELATIVE,
         .size = {.y = 50},
@@ -69,6 +69,7 @@ void tifc_create_ui_layout(tifc_t *const tifc)
     layout.align = LAYOUT_ALIGN_LEFT;
     layout.size.x = 50;
     ui_add_panel(&tifc->ui, "left", layout, BORDER_STYLE_3);
+    
 
     layout.align = LAYOUT_ALIGN_TOP;
     layout.size.y = 50;

@@ -1,8 +1,6 @@
 #ifndef _LAYOUT_H_
 #define _LAYOUT_H_
 
-#include "display.h"
-
 typedef enum
 {
     LAYOUT_ALIGN_TOP            = 1 << 0,
@@ -35,17 +33,10 @@ layout_align_t;
 
 typedef enum
 {
-    LAYOUT_SIZE_FIXED = 0,
-    LAYOUT_SIZE_RELATIVE
+    LAYOUT_SIZE_FIXED = 0, /* fixed amount */
+    LAYOUT_SIZE_RELATIVE   /* percents from free space left */
 }
 layout_size_method_t;
 
-typedef struct
-{
-    layout_align_t       align;
-    layout_size_method_t size_method;
-    disp_pos_t           size;
-}
-layout_t;
 
 #endif /* _LAYOUT_H_ */

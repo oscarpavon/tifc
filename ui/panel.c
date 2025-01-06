@@ -43,7 +43,7 @@ fill_horizontal(disp_area_t *panel_area,
                 disp_area_t *bounds);
 
 static disp_area_t
-calc_panel_area(const layout_t *const layout,
+calc_panel_area(const panel_layout_t *const layout,
                 disp_area_t *const bounds);
 static void
 panel_draw_title(const panel_t *panel,
@@ -87,7 +87,7 @@ void panel_render(const panel_t *panel,
 
 
 static disp_area_t
-calc_panel_area(const layout_t *const layout,
+calc_panel_area(const panel_layout_t *const layout,
                 disp_area_t *const bounds)
 {
     unsigned int horizontal_size = bounds->second.x - bounds->first.x;

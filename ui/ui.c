@@ -95,7 +95,7 @@ void ui_render(const ui_t *const ui,
 
 void ui_add_panel(ui_t *const ui,
                   const char *title,
-                  layout_t layout,
+                  panel_layout_t layout,
                   style_t style)
 {
     (void) style; // style should not be set per panel (maybe we'll configure theme for whole app)
