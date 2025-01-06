@@ -106,7 +106,13 @@ build_objects() {
  
         # compile
         local cmd="${CC} ${CPPFLAGS} ${CFLAGS} -c ${src} -o ${obj_path}"
-        ${cmd} || return $? # return on failure
+        ${cmd}
+        local status=$?
+        : echo "CC STATUS: $status" >&2
+
+        [ "$status" -ne '0' ] && echo ${compiled} && { exit "$status" ;} # failure
+
+        # success
         echo "${cmd}" >&2
         sha1sum ${deps} > ${sum} # recalculate sum
 
@@ -159,8 +165,15 @@ build_executable() {
     local sources="${source} $( h2c ${deps} )"
     local objects=$(echo ${sources} | sed "s/\.c/\.o/g; s@\([./a-zA-Z0-9~$]\+\)@${BUILD_DIR}/\1@g")
     local sum="${STAMP_DIR}/${target}.sha1"
-    local compiled=$( build_objects ${sources} )
-    [ $? != 0 ] && return $?
+
+    local compiled;
+    local status;
+
+    compiled=$( build_objects ${sources} )
+    status=$?
+    : echo "COMPILE STATUS = $status" >&2
+
+    [ "$status" != 0 ] && { return "$status" ;}
 
     echo "Compiled: $compiled" >&2
     # is newer source
