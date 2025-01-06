@@ -1,26 +1,39 @@
 #ifndef _GRID_H_
 #define _GRID_H_
 
-#include <stddef.h>
-#include <sparse.h>
-
-#include "display.h"
+#include "dynarr.h"
 #include "layout.h"
+#include "display_types.h"
+
+#include <stdint.h>
 
 #define MAX_COLUMNS 256
+#define MAX_ROWS 256
 
 typedef struct
 {
-    unsigned int columns;
-    unsigned int rows;
-    sparse_t *cells;
+    uint16_t columns;
+    uint16_t rows;
+
+    dynarr_t *layout;
+    dynarr_t *cells;
+
+    /* columns & rows spans recalculated on resize */
+    dynarr_t *spans;
 }
 grid_t;
 
 typedef struct
 {
-    unsigned int start;
-    unsigned int end;
+    layout_size_method_t size_method;
+    uint16_t             size;
+}
+grid_layout_t;
+
+typedef struct
+{
+    uint16_t start;
+    uint16_t end;
 }
 span_t;
 
@@ -31,12 +44,38 @@ typedef struct
 }
 grid_span_t;
 
+typedef enum
+{
+    TEXT_ALIGN_LEFT = 0,
+    TEXT_ALIGN_RIGHT,
+    TEXT_ALIGN_CENTER
+}
+text_align_t;
+
 typedef struct
 {
-    layout_t layout;
+    text_align_t text_align;
     grid_span_t span;
     disp_area_t area;
 }
 grid_cell_t;
+
+
+void grid_init(grid_t *const grid,
+    uint8_t columns,
+    uint8_t rows,
+    grid_layout_t column_layout[columns],
+    grid_layout_t row_layout[rows]);
+
+void grid_deinit(grid_t *const grid);
+
+
+void grid_add_cell(grid_t *const grid,
+        grid_span_t span,
+        text_align_t text_align);
+
+
+void grid_recalculate_layout(grid_t *const grid,
+        const disp_area_t *const panel_area);
 
 #endif// _GRID_H_
