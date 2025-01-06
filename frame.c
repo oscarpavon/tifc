@@ -30,14 +30,14 @@ size_t init_frame_behavior(canvas_t *canvas)
 size_t create_frame(canvas_t *const canvas, vec2_t pos, vec2_t box)
 {
     components_t *const components = &canvas->components;
-    size_t frame_id = components->last_id++;
+    size_t new_frame_index = sparse_last_free_index(components->transform);
     size_t behavior_id = init_frame_behavior(canvas); // first time init
     transform_comp_t transform = {.location = pos};
-    sparse_insert(&components->transform, frame_id, &transform);
-    sparse_insert(&components->box, frame_id, &box);
-    sparse_insert(&components->behavior, frame_id, &behavior_id);
-    dynarr_append(&canvas->ents.frames, &frame_id);
-    return frame_id;
+    sparse_insert(&components->transform, new_frame_index, &transform);
+    sparse_insert(&components->box, new_frame_index, &box);
+    sparse_insert(&components->behavior, new_frame_index, &behavior_id);
+    dynarr_append(&canvas->ents.frames, &new_frame_index);
+    return new_frame_index;
 }
 
 size_t create_styled_frame(canvas_t *const canvas, vec2_t pos, vec2_t box, const style_t style)

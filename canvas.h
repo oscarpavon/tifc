@@ -21,8 +21,6 @@ transform_comp_t;
 
 typedef struct components
 {
-    size_t last_id;
-
     sparse_t *transform; // transform_comp_t
     sparse_t *box;       // vec2_t - width and heigh
     sparse_t *behavior;  // size_t

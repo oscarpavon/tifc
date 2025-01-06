@@ -3,6 +3,7 @@
 #include "layout.h"
 
 #include <assert.h>
+#include <string.h>
 
 static void
 centralize_vertical(unsigned int vertical_size,
@@ -51,6 +52,19 @@ panel_draw_title(const panel_t *panel,
     disp_area_t title_area = panel->area;
     title_area.second.y = title_area.first.y;
     display_draw_string_centered(display, panel->title_size, panel->title, title_area, panel->style);
+}
+
+void panel_create(panel_t *panel,
+                  const panel_opts_t *const opts)
+{
+    assert(panel);
+    assert(opts);
+
+    *panel = (panel_t){
+        .title = opts->title,
+        .title_size = strlen(opts->title),
+        .layout = opts->layout,
+    };
 }
 
 void panel_recalculate_layout(panel_t *panel,

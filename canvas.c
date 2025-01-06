@@ -295,9 +295,9 @@ static void render_grid(transform_comp_t *camera_transform, display_t *const dis
 
 static size_t create_camera(components_t *const components)
 {
-    const size_t id = components->last_id++;
+    const size_t new_component_index = sparse_last_free_index(components->transform);
     transform_comp_t camera_transform = {0};
-    sparse_insert(&components->transform, id, &camera_transform);
-    return id;
+    sparse_insert(&components->transform, new_component_index, &camera_transform);
+    return new_component_index;
 }
 

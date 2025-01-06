@@ -10,9 +10,7 @@ typedef struct
 {
     input_hooks_t hooks;
     sparse_t     *panels;
-    size_t        last_panel_id;
     sparse_t     *items;
-    size_t        last_item_id;
 }
 ui_t;
 
