@@ -249,7 +249,7 @@ main() {
         ;;
         check)
             local target=${2}
-            { check ${target} ;}
+            check ${target}
         ;;
         clean)
             local cmd="rm -rf ${BUILD_DIR}"
@@ -257,11 +257,12 @@ main() {
             $($cmd)
         ;;
         help)
-            { help $2 ;}
+            help $2
         ;;
         *)
             echo "ERROR : Wrong sub-command '${sub_cmd}'" >&2
-            { help ${sub_cmd} >&2 ;}
+            help ${sub_cmd} >&2
+            exit 1
         ;;
     esac
 }
