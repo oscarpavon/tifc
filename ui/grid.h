@@ -3,7 +3,7 @@
 
 #include "dynarr.h"
 #include "layout.h"
-#include "display_types.h"
+#include "display.h"
 
 #include <stdint.h>
 
@@ -74,6 +74,7 @@ void grid_add_cell(grid_t *const grid,
         grid_span_t span,
         text_align_t text_align);
 
+void grid_render(const grid_t *const grid, display_t *const display);
 
 void grid_recalculate_layout(grid_t *const grid,
         const disp_area_t *const panel_area);

@@ -1,5 +1,6 @@
 #include "panel.h"
 #include "display.h"
+#include "grid.h"
 #include "layout.h"
 
 #include <assert.h>
@@ -54,7 +55,7 @@ panel_draw_title(const panel_t *panel,
     display_draw_string_centered(display, panel->title_size, panel->title, title_area, panel->style);
 }
 
-void panel_create(panel_t *panel,
+void panel_init(panel_t *const panel,
                   const panel_opts_t *const opts)
 {
     assert(panel);
@@ -65,12 +66,25 @@ void panel_create(panel_t *panel,
         .title_size = strlen(opts->title),
         .layout = opts->layout,
     };
+
+    grid_init(&panel->grid,
+        opts->columns,
+        opts->rows,
+        opts->column_layout,
+        opts->row_layout);
+}
+
+void panel_deinit(panel_t *const panel)
+{
+    assert(panel);
+    grid_deinit(&panel->grid);
 }
 
 void panel_recalculate_layout(panel_t *panel,
                               disp_area_t *const bounds)
 {
     panel->area = calc_panel_area(&panel->layout, bounds);
+    grid_recalculate_layout(&panel->grid, &panel->area); // TODO
 }
 
 void panel_render(const panel_t *panel,
@@ -83,6 +97,9 @@ void panel_render(const panel_t *panel,
     display_draw_border(display, panel->style, border, panel_area);
     // display_fill_area(display, panel->style, panel_area);
     panel_draw_title(panel, display);
+    
+    // render temporary TODO
+    grid_render(&panel->grid, display);
 }
 
 

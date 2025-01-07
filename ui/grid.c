@@ -1,5 +1,6 @@
 #include "grid.h"
-#include "display_types.h"
+#include "border.h"
+#include "display.h"
 #include "dynarr.h"
 #include "layout.h"
 
@@ -26,13 +27,16 @@ void grid_init(grid_t *const grid,
             .element_size = sizeof(grid_layout_t),
             .initial_cap = columns + rows,
         );
-    
+
     grid->spans = dynarr_create
         (
             .element_size = sizeof(span_t),
             .initial_cap = columns + rows,
         );
-    
+
+    // TODO: should implement reserve range for dynarr
+    dynarr_spread_insert(&grid->spans, 0, columns + rows, TMP_REF(span_t, 0));
+
     grid->cells = dynarr_create
         (
             .element_size = sizeof(grid_cell_t),
@@ -74,11 +78,17 @@ void grid_add_cell(grid_t *const grid, grid_span_t span, text_align_t text_align
     (void) dynarr_append(&grid->cells, &cell);
 }
 
-// static
-// void cell_recalculate_layout(grid_cell_t *const cell, disp_area_t *const bounds)
-// {
-//
-// }
+
+void grid_render(const grid_t *const grid, display_t *const display)
+{
+    const size_t cells_amount = dynarr_size(grid->cells);
+    for (size_t i = 0; i < cells_amount; ++i)
+    {
+        grid_cell_t *cell = dynarr_get(grid->cells, i);
+        border_set_t border = {._ = L"╭╮╯╰┆┄"};
+        display_draw_border(display, BORDER_STYLE_1, border, cell->area);
+    }
+}
 
 
 void grid_recalculate_layout(grid_t *const grid, const disp_area_t *const panel_area)
@@ -86,7 +96,7 @@ void grid_recalculate_layout(grid_t *const grid, const disp_area_t *const panel_
     assert(grid);
     assert(panel_area);
 
-    uint16_t width = panel_area->second.x - panel_area->first.x - 2;
+    uint16_t width = panel_area->second.x - panel_area->first.x - 1;
     uint16_t start = panel_area->first.x + 1; // exclude border
     for (size_t c = 0; c < grid->columns; ++c)
     {
@@ -105,7 +115,7 @@ void grid_recalculate_layout(grid_t *const grid, const disp_area_t *const panel_
         start += size;
     }
 
-    uint16_t height = panel_area->second.y - panel_area->first.y - 2;
+    uint16_t height = panel_area->second.y - panel_area->first.y - 1;
     start = panel_area->first.y + 1;
     for (size_t r = 0; r < grid->rows; ++r)
     {

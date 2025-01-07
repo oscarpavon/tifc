@@ -26,11 +26,10 @@ ui_resize_hook(const display_t *const display,
 void
 ui_render(const ui_t *const ui,
         display_t *const display);
-void
-ui_add_panel(ui_t *const ui,
-        const char *title,
-        panel_layout_t layout,
-        style_t style);
+
+
+panel_t *ui_add_panel(ui_t *const ui, const panel_opts_t *const opts);
+
 void
 ui_add_item(ui_t *const ui, const char *title);
 

@@ -1,7 +1,9 @@
 #include "tifc.h"
 #include "display.h"
 #include "frame.h"
+#include "grid.h"
 #include "layout.h"
+#include "panel.h"
 #include "ui.h"
 
 #include <locale.h>
@@ -59,25 +61,84 @@ void tifc_render(tifc_t *const tifc)
 
 void tifc_create_ui_layout(tifc_t *const tifc)
 {
-    panel_layout_t layout = {
-        .align = LAYOUT_ALIGN_TOP,
-        .size_method = LAYOUT_SIZE_RELATIVE,
-        .size = {.y = 50},
+    panel_opts_t *opts = &(panel_opts_t)
+    {
+        .title = "top",
+        .layout = {
+            .align = LAYOUT_ALIGN_TOP,
+            .size_method = LAYOUT_SIZE_RELATIVE,
+            .size = {.y = 50},
+        },
+        .columns = 4,
+        .column_layout = (grid_layout_t[]){
+            [0] = {.size = 3},
+            [1] = {.size = 50, .size_method = LAYOUT_SIZE_RELATIVE },
+            [2] = {.size = 50, .size_method = LAYOUT_SIZE_RELATIVE },
+            [3] = {.size = 100, .size_method = LAYOUT_SIZE_RELATIVE },
+        },
+        .rows = 3,
+        .row_layout = (grid_layout_t[]){
+            [0] = {.size = 3},
+            [1] = {.size = 35, .size_method = LAYOUT_SIZE_RELATIVE },
+            [2] = {.size = 100, .size_method = LAYOUT_SIZE_RELATIVE },
+        }
     };
-    ui_add_panel(&tifc->ui, "top", layout, BORDER_STYLE_4);
+    panel_t * panel = ui_add_panel(&tifc->ui, opts);
+    grid_span_t span;
 
-    layout.align = LAYOUT_ALIGN_LEFT;
-    layout.size.x = 50;
-    ui_add_panel(&tifc->ui, "left", layout, BORDER_STYLE_3);
-    
+    span = (grid_span_t){{0, 0}, {0, 0}};
+    grid_add_cell(&panel->grid, span, TEXT_ALIGN_LEFT);
 
-    layout.align = LAYOUT_ALIGN_TOP;
-    layout.size.y = 50;
-    ui_add_panel(&tifc->ui, "right-top", layout, BORDER_STYLE_3);
+    span = (grid_span_t){{1, 1}, {0, 0}};
+    grid_add_cell(&panel->grid, span, TEXT_ALIGN_LEFT);
 
-    layout.align = LAYOUT_ALIGN_BOT;
-    layout.size.y = 0;
-    ui_add_panel(&tifc->ui, "right-bot", layout, BORDER_STYLE_3);
+    span = (grid_span_t){{2, 2}, {0, 0}};
+    grid_add_cell(&panel->grid, span, TEXT_ALIGN_LEFT);
+
+    span = (grid_span_t){{3, 3}, {0, 0}};
+    grid_add_cell(&panel->grid, span, TEXT_ALIGN_LEFT);
+
+    span = (grid_span_t){{0, 0}, {1, 1}};
+    grid_add_cell(&panel->grid, span, TEXT_ALIGN_LEFT);
+
+    span = (grid_span_t){{1, 1}, {1, 1}};
+    grid_add_cell(&panel->grid, span, TEXT_ALIGN_LEFT);
+
+    span = (grid_span_t){{2, 2}, {1, 1}};
+    grid_add_cell(&panel->grid, span, TEXT_ALIGN_LEFT);
+
+    span = (grid_span_t){{3, 3}, {1, 1}};
+    grid_add_cell(&panel->grid, span, TEXT_ALIGN_LEFT);
+
+    span = (grid_span_t){{0, 0}, {2, 2}};
+    grid_add_cell(&panel->grid, span, TEXT_ALIGN_LEFT);
+
+    span = (grid_span_t){{1, 1}, {2, 2}};
+    grid_add_cell(&panel->grid, span, TEXT_ALIGN_LEFT);
+
+    span = (grid_span_t){{2, 2}, {2, 2}};
+    grid_add_cell(&panel->grid, span, TEXT_ALIGN_LEFT);
+
+    span = (grid_span_t){{3, 3}, {2, 2}};
+    grid_add_cell(&panel->grid, span, TEXT_ALIGN_LEFT);
+
+
+
+
+    opts->title = "left";
+    opts->layout.align = LAYOUT_ALIGN_LEFT;
+    opts->layout.size.x = 50;
+    (void) ui_add_panel(&tifc->ui, opts);
+
+    opts->title = "right-top";
+    opts->layout.align = LAYOUT_ALIGN_TOP;
+    opts->layout.size.y = 50;
+    (void) ui_add_panel(&tifc->ui, opts);
+
+    opts->title = "right-bot";
+    opts->layout.align = LAYOUT_ALIGN_BOT;
+    opts->layout.size.y = 0;
+    (void) ui_add_panel(&tifc->ui, opts);
 
     ui_recalculate_layout(&tifc->ui, &tifc->display);
 }

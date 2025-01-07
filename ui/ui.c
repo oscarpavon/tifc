@@ -93,19 +93,13 @@ void ui_render(const ui_t *const ui,
     }
 }
 
-void ui_add_panel(ui_t *const ui,
-                  const char *title,
-                  panel_layout_t layout,
-                  style_t style)
+panel_t *ui_add_panel(ui_t *const ui, const panel_opts_t *const opts)
 {
-    (void) style; // style should not be set per panel (maybe we'll configure theme for whole app)
     const size_t new_panel_index = sparse_last_free_index(ui->panels);
     (void) sparse_insert_reserve(&ui->panels, new_panel_index);
     panel_t *panel = sparse_get(ui->panels, new_panel_index);
-    panel_create(panel, &(panel_opts_t){
-        .title = title,
-        .layout = layout,
-    });
+    panel_init(panel, opts);
+    return panel;
 }
 
 static void on_hover(const mouse_event_t *const hover, void *const param)
