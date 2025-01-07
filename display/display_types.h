@@ -19,4 +19,12 @@ typedef struct
 }
 disp_area_t;
 
+#define IS_INVALID_AREA(area_ptr) \
+   ((area_ptr)->first.x  == (uint16_t) -1 &&\
+    (area_ptr)->first.y  == (uint16_t) -1 &&\
+    (area_ptr)->second.x == (uint16_t) -1 &&\
+    (area_ptr)->second.y == (uint16_t) -1)
+
+#define INVALID_AREA ((disp_area_t) {{-1, -1}, {-1, -1}})
+
 #endif//_DISPLAY_TYPES_

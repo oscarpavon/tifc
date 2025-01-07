@@ -1,6 +1,7 @@
 #include "grid.h"
 #include "border.h"
 #include "display.h"
+#include "display_types.h"
 #include "dynarr.h"
 #include "layout.h"
 
@@ -86,7 +87,49 @@ void grid_render(const grid_t *const grid, display_t *const display)
     {
         grid_cell_t *cell = dynarr_get(grid->cells, i);
         border_set_t border = {._ = L"╭╮╯╰┆┄"};
-        display_draw_border(display, BORDER_STYLE_1, border, cell->area);
+
+        if (! IS_INVALID_AREA(&cell->area))
+            display_draw_border(display, BORDER_STYLE_1, border, cell->area);
+    }
+}
+
+static
+void calculate_spans(
+        size_t start_offset,
+        size_t length,
+        const size_t spans_amount,
+        const size_t offset,
+        const dynarr_t *const grid_layout,
+        dynarr_t *const grid_spans
+    )
+{
+    bool no_space_left = false;
+    size_t size;
+
+    for (size_t i = 0; i < spans_amount; ++i)
+    {
+        span_t *span = dynarr_get(grid_spans, i + offset);
+        if (no_space_left)
+        {
+            *span = INVALID_SPAN;
+            continue;
+        }
+
+        // access layout
+        const grid_layout_t *layout = dynarr_get(grid_layout, i + offset);
+
+        span->start = start_offset;
+        size = (LAYOUT_SIZE_RELATIVE == layout->size_method)
+            ? layout->size * length / 100
+            : layout->size;
+
+        if (size > length) size = length;
+
+        span->end = span->start + size - 1;
+        start_offset += size;
+        length -= size;
+
+        if (0 == length) no_space_left = true;
     }
 }
 
@@ -96,62 +139,54 @@ void grid_recalculate_layout(grid_t *const grid, const disp_area_t *const panel_
     assert(grid);
     assert(panel_area);
 
-    uint16_t width = panel_area->second.x - panel_area->first.x - 1;
-    uint16_t start = panel_area->first.x + 1; // exclude border
-    for (size_t c = 0; c < grid->columns; ++c)
-    {
-        // access layout
-        const grid_layout_t *layout = dynarr_get(grid->layout, c);
+    const size_t width = panel_area->second.x - panel_area->first.x - 1;
+    const size_t height = panel_area->second.y - panel_area->first.y - 1;
 
-        span_t *span = dynarr_get(grid->spans, c);
-        span->start = start;
+    calculate_spans(panel_area->first.x + 1, width, grid->columns,
+            0 /* columns offset */,
+            grid->layout, grid->spans);
 
-        uint16_t size = (LAYOUT_SIZE_FIXED == layout->size_method)
-            ? layout->size
-            : layout->size * width / 100;
-
-        span->end = span->start + size - 1;
-        width -= size;
-        start += size;
-    }
-
-    uint16_t height = panel_area->second.y - panel_area->first.y - 1;
-    start = panel_area->first.y + 1;
-    for (size_t r = 0; r < grid->rows; ++r)
-    {
-        // access layout
-        const grid_layout_t *layout = dynarr_get(grid->layout, r + grid->columns);
-
-        span_t *span = dynarr_get(grid->spans, r + grid->columns);
-        span->start = start;
-
-        uint16_t size = (LAYOUT_SIZE_FIXED == layout->size_method)
-            ? layout->size
-            : layout->size * height / 100;
-
-        span->end = span->start + size - 1;
-        height -= size;
-        start += size;
-    }
+    calculate_spans(panel_area->first.y + 1, height, grid->rows,
+            grid->columns /* rows offset */,
+            grid->layout, grid->spans);
 
     const size_t cells_amount = dynarr_size(grid->cells);
     for (size_t i = 0; i < cells_amount; ++i)
     {
         grid_cell_t *cell = dynarr_get(grid->cells, i);
 
-        uint16_t column = cell->span.column.start;
-        uint16_t row = cell->span.row.start;
+        const size_t column     = cell->span.column.start;
+        const size_t column_end = cell->span.column.end;
 
-        span_t *first_column = dynarr_get(grid->spans, column);
-        span_t *first_row = dynarr_get(grid->spans, grid->columns + row);
+        const span_t *first_column = dynarr_get(grid->spans, column);
+        const span_t *last_column = first_column;
 
-        column = cell->span.column.end;
-        row = cell->span.row.end;
+        for (size_t i = column; i < column_end; ++i)
+        {
+            if (IS_INVALID_SPAN(last_column + 1)) break;
+            ++last_column;
+        }
 
-        span_t *last_column = dynarr_get(grid->spans, column);
-        span_t *last_row = dynarr_get(grid->spans, grid->columns + row);
+        const size_t row        = cell->span.row.start;
+        const size_t row_end    = cell->span.row.end;
 
-        disp_area_t area = {
+        const span_t *first_row = dynarr_get(grid->spans, grid->columns + row);
+        const span_t *last_row = first_row;
+
+        for (size_t i = row; i < row_end; ++i)
+        {
+            if (IS_INVALID_SPAN(last_row + 1)) break;
+            ++last_row;
+        }
+
+        if (IS_INVALID_SPAN(first_column) || IS_INVALID_SPAN(first_row))
+        {
+            cell->area = INVALID_AREA;
+            return; /* exit */
+        }
+
+        /* otherwise */
+        cell->area = (disp_area_t){
             .first = {
                 .x = first_column->start,
                 .y = first_row->start,
@@ -161,7 +196,5 @@ void grid_recalculate_layout(grid_t *const grid, const disp_area_t *const panel_
                 .y = last_row->end,
             },
         };
-
-        cell->area = area;
     }
 }

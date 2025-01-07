@@ -37,6 +37,10 @@ typedef struct
 }
 span_t;
 
+#define IS_INVALID_SPAN(span_ptr) ((span_ptr)->start == (uint16_t) -1 \
+                                  && (span_ptr)->end == (uint16_t) -1)
+#define INVALID_SPAN ((span_t){-1, -1})
+
 typedef struct
 {
     span_t column;
