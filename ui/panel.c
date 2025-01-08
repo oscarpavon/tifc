@@ -65,6 +65,7 @@ void panel_init(panel_t *const panel,
         .title = opts->title,
         .title_size = strlen(opts->title),
         .layout = opts->layout,
+        .area = INVALID_AREA
     };
 
     grid_init(&panel->grid,
