@@ -16,7 +16,7 @@ typedef struct
     uint16_t rows;
 
     dynarr_t *layout;
-    dynarr_t *cells;
+    dynarr_t *areas;
 
     /* columns & rows spans recalculated on resize */
     dynarr_t *spans;
@@ -62,7 +62,7 @@ typedef struct
     grid_span_t span;
     disp_area_t area;
 }
-grid_cell_t;
+grid_area_t;
 
 
 void grid_init(grid_t *const grid,
@@ -74,7 +74,7 @@ void grid_init(grid_t *const grid,
 void grid_deinit(grid_t *const grid);
 
 
-void grid_add_cell(grid_t *const grid,
+void grid_add_area(grid_t *const grid,
         grid_span_t span,
         text_align_t text_align);
 

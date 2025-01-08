@@ -63,7 +63,7 @@ void grid_deinit(grid_t *const grid)
 }
 
 
-void grid_add_cell(grid_t *const grid, grid_span_t span, text_align_t text_align)
+void grid_add_area(grid_t *const grid, grid_span_t span, text_align_t text_align)
 {
     assert(grid);
 
@@ -72,20 +72,20 @@ void grid_add_cell(grid_t *const grid, grid_span_t span, text_align_t text_align
     assert(span.column.end < grid->columns);
     assert(span.row.end < grid->rows);
 
-    grid_cell_t cell = {
+    grid_area_t area = {
         .text_align = text_align,
         .span = span,
     };
-    (void) dynarr_append(&grid->cells, &cell);
+    (void) dynarr_append(&grid->areas, &area);
 }
 
 
 void grid_render(const grid_t *const grid, display_t *const display)
 {
-    const size_t cells_amount = dynarr_size(grid->cells);
-    for (size_t i = 0; i < cells_amount; ++i)
+    const size_t areas_amount = dynarr_size(grid->areas);
+    for (size_t i = 0; i < areas_amount; ++i)
     {
-        grid_cell_t *cell = dynarr_get(grid->cells, i);
+        grid_area_t *area = dynarr_get(grid->areas, i);
         border_set_t border = {._ = L"╭╮╯╰┆┄"};
 
         if (! IS_INVALID_AREA(&cell->area))
@@ -150,10 +150,10 @@ void grid_recalculate_layout(grid_t *const grid, const disp_area_t *const panel_
             grid->columns /* rows offset */,
             grid->layout, grid->spans);
 
-    const size_t cells_amount = dynarr_size(grid->cells);
-    for (size_t i = 0; i < cells_amount; ++i)
+    const size_t areas_amount = dynarr_size(grid->areas);
+    for (size_t i = 0; i < areas_amount; ++i)
     {
-        grid_cell_t *cell = dynarr_get(grid->cells, i);
+        grid_area_t *area = dynarr_get(grid->areas, i);
 
         const size_t column     = cell->span.column.start;
         const size_t column_end = cell->span.column.end;
@@ -181,12 +181,12 @@ void grid_recalculate_layout(grid_t *const grid, const disp_area_t *const panel_
 
         if (IS_INVALID_SPAN(first_column) || IS_INVALID_SPAN(first_row))
         {
-            cell->area = INVALID_AREA;
+            area->area = INVALID_AREA;
             return; /* exit */
         }
 
         /* otherwise */
-        cell->area = (disp_area_t){
+        area->area = (disp_area_t){
             .first = {
                 .x = first_column->start,
                 .y = first_row->start,
