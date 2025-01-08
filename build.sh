@@ -121,6 +121,22 @@ build_objects() {
     echo ${compiled}
 }
 
+gen_compile_commands() {
+    # Build objects from sources
+    for dir in ${ROOT_DIR} ${SUBDIRS}; do
+        for src in ${dir}/*.c; do
+            # source -> object
+            local obj=$(echo ${src} | sed 's/\.c/\.o/g')
+            local obj_path="${BUILD_DIR}/${obj}"
+            local deps=$( collect_dependencies ${src} )
+
+            # compile
+            local cmd="${CC} ${CPPFLAGS} ${CFLAGS} -c ${src} -o ${obj_path}"
+            echo ${cmd}
+        done
+    done
+}
+
 collect_tests() {
     # collect tests
     local tests=""
@@ -203,6 +219,7 @@ help() {
     local compile_desc="compile [<target>]      - compile specific target. default target: 'tifc'"
     local check_desc="check [<target|object>] - check sum of the dependencies."
     local clean_desc="clean                   - Remove all build artifacts."
+    local init_clangd_desc="init_clangd             - Generates 'compile_commands.json' file for clangd. "
     local help_desc="help                    - show this help menu."
     case "$1" in
         compile)
@@ -215,6 +232,9 @@ help() {
         clean)
             echo "\t${clean_desc}"
         ;;
+        init_clangd)
+            echo "\t${init_clangd_desc}"
+        ;;
         help)
             echo "\t${help_desc}"
         ;;
@@ -222,6 +242,7 @@ help() {
             echo "Available sub-commands:"
             echo "\t${compile_desc}"
             echo "\t${clean_desc}"
+            echo "\t${init_clangd_desc}"
             echo "\t${help_desc}"
         ;;
     esac
@@ -255,6 +276,13 @@ main() {
             local cmd="rm -rf ${BUILD_DIR}"
             echo "${cmd}"
             $($cmd)
+        ;;
+        init_clangd)
+            gen_compile_commands \
+                | grep -wE "${CC}" \
+                | grep -w '\-c' \
+                | jq -nR '[inputs|{directory:".", command:., file: match(" [^ ]+$").string[1:]}]' \
+                > compile_commands.json
         ;;
         help)
             help $2
