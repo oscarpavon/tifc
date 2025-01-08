@@ -281,7 +281,7 @@ main() {
             gen_compile_commands \
                 | grep -wE "${CC}" \
                 | grep -w '\-c' \
-                | jq -nR '[inputs|{directory:".", command:., file: match(" [^ ]+$").string[1:]}]' \
+                | jq -nR '[inputs|{directory:env.PWD, command:., file: match(" [^ ]+$").string[1:]}]' \
                 > compile_commands.json
         ;;
         help)
