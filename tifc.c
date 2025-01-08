@@ -137,7 +137,7 @@ void tifc_create_ui_layout(tifc_t *const tifc)
 
     opts->title = "right-bot";
     opts->layout.align = LAYOUT_ALIGN_BOT;
-    opts->layout.size.y = 0;
+    opts->layout.size.y = 100;
     (void) ui_add_panel(&tifc->ui, opts);
 
     ui_recalculate_layout(&tifc->ui, &tifc->display);
