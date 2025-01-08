@@ -142,9 +142,10 @@ collect_tests() {
     local tests=""
     for dir in ${SUBDIRS}; do
         for _test_ in ${dir}/*_test.c; do
-            tests="${tests} ${_test_}"
+            if [ -e ${_test_} ]; then tests="${tests} ${_test_}"; fi
         done
     done
+    echo "collected :${tests}" >&2
     echo ${tests}
 }
 
@@ -179,7 +180,7 @@ build_executable() {
 
     local deps=$( collect_dependencies ${source} )
     local sources="${source} $( h2c ${deps} )"
-    local objects=$(echo ${sources} | sed "s/\.c/\.o/g; s@\([./a-zA-Z0-9~$]\+\)@${BUILD_DIR}/\1@g")
+    local objects=$(echo ${sources} | sed "s/\.c/\.o/g; s@\([./a-zA-Z0-9~_$]\+\)@${BUILD_DIR}/\1@g")
     local sum="${STAMP_DIR}/${target}.sha1"
 
     local compiled;
