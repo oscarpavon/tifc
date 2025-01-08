@@ -157,22 +157,14 @@ calc_panel_area(const panel_layout_t *const layout,
     else if ((LAYOUT_ALIGN_TOP | LAYOUT_ALIGN_BOT) & layout->align)
     {
         fill_horizontal(&panel_area, bounds);
-        if (height == 0)
-        {
-            fill_vertical(&panel_area, bounds);
-        }
-        else (LAYOUT_ALIGN_TOP & layout->align)
+        (LAYOUT_ALIGN_TOP & layout->align)
             ? dock_to_top(vertical_size, height, &panel_area, bounds)
             : dock_to_bot(vertical_size, height, &panel_area, bounds);
     }
     else if ((LAYOUT_ALIGN_LEFT | LAYOUT_ALIGN_RIGHT) & layout->align)
     {
         fill_vertical(&panel_area, bounds);
-        if (width == 0)
-        {
-            fill_horizontal(&panel_area, bounds);
-        }
-        else (LAYOUT_ALIGN_LEFT & layout->align)
+        (LAYOUT_ALIGN_LEFT & layout->align)
             ? dock_to_left(horizontal_size, width, &panel_area, bounds)
             : dock_to_right(horizontal_size, width, &panel_area, bounds);
     }
