@@ -6,6 +6,8 @@
 #include <assert.h>
 #include <string.h>
 
+#define MIN_PANEL_SIZE 2
+
 static void
 centralize_vertical(unsigned int vertical_size,
                     unsigned int vmax,
@@ -85,13 +87,20 @@ void panel_recalculate_layout(panel_t *panel,
                               disp_area_t *const bounds)
 {
     panel->area = calc_panel_area(&panel->layout, bounds);
-    grid_recalculate_layout(&panel->grid, &panel->area); // TODO
+
+    if (!IS_INVALID_AREA(&panel->area))
+    {
+        grid_recalculate_layout(&panel->grid, &panel->area); // TODO
+    }
 }
 
 void panel_render(const panel_t *panel,
                   display_t *const display)
 {
     assert(panel);
+
+    // dont render panel if has no valid area
+    if (IS_INVALID_AREA(&panel->area)) return;
 
     disp_area_t panel_area = panel->area;
     border_set_t border = {._ = L"╭╮╯╰│─"};
@@ -119,11 +128,18 @@ calc_panel_area(const panel_layout_t *const layout,
         assert(height <= 100);
         width = horizontal_size * width / 100;
         height = vertical_size * height / 100;
+
+        if (width < MIN_PANEL_SIZE) width = MIN_PANEL_SIZE;
+        if (height < MIN_PANEL_SIZE) height = MIN_PANEL_SIZE;
     }
 
+    if (vertical_size - height < MIN_PANEL_SIZE) height = vertical_size;
+    if (horizontal_size - width < MIN_PANEL_SIZE) width = horizontal_size;
+
+    // panel should not be rendered
     if (horizontal_size == 0 || vertical_size == 0)
     {
-        return (disp_area_t){0};
+        return INVALID_AREA;
     }
 
     disp_area_t panel_area = {0};
@@ -197,16 +213,16 @@ centralize_horizontal(unsigned int horizontal_size,
                       disp_area_t *panel_area,
                       disp_area_t *bounds)
 {
-        panel_area->first.x = bounds->first.x;
-        panel_area->second.x = bounds->second.x;
-        if (hmax && hmax < horizontal_size)
-        {
-            unsigned int padding = horizontal_size - hmax;
-            unsigned int left = padding / 2;
-            unsigned int right = padding - left;
-            panel_area->first.x += left;
-            panel_area->second.x -= right;
-        }
+    panel_area->first.x = bounds->first.x;
+    panel_area->second.x = bounds->second.x;
+    if (hmax && hmax < horizontal_size)
+    {
+        unsigned int padding = horizontal_size - hmax;
+        unsigned int left = padding / 2;
+        unsigned int right = padding - left;
+        panel_area->first.x += left;
+        panel_area->second.x -= right;
+    }
 }
 
 static void
