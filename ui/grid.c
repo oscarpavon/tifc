@@ -38,9 +38,9 @@ void grid_init(grid_t *const grid,
     // TODO: should implement reserve range for dynarr
     dynarr_spread_insert(&grid->spans, 0, columns + rows, TMP_REF(span_t, 0));
 
-    grid->cells = dynarr_create
+    grid->areas = dynarr_create
         (
-            .element_size = sizeof(grid_cell_t),
+            .element_size = sizeof(grid_area_t),
         );
 
     for (uint8_t c = 0; c < columns; ++c)
@@ -59,7 +59,7 @@ void grid_deinit(grid_t *const grid)
 {
     dynarr_destroy(grid->layout);
     dynarr_destroy(grid->spans);
-    dynarr_destroy(grid->cells);
+    dynarr_destroy(grid->areas);
 }
 
 
