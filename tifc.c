@@ -52,7 +52,7 @@ input_hooks_t* tifc_mode_current_hooks(tifc_t *const tifc)
 void tifc_render(tifc_t *const tifc)
 {
     display_clear(&tifc->display);
-    canvas_render(&tifc->canvas, &tifc->display);
+    //canvas_render(&tifc->canvas, &tifc->display);
     // ...
     
     ui_render(&tifc->ui, &tifc->display);
