@@ -107,8 +107,8 @@ static disp_area_t
 calc_panel_area(const panel_layout_t *const layout,
                 disp_area_t *const bounds)
 {
-    unsigned int horizontal_size = bounds->second.x - bounds->first.x;
-    unsigned int vertical_size = bounds->second.y - bounds->first.y;
+    unsigned int horizontal_size = bounds->second.x - bounds->first.x + 1;
+    unsigned int vertical_size = bounds->second.y - bounds->first.y + 1;
     unsigned int width = layout->size.x;
     unsigned int height = layout->size.y;
 
