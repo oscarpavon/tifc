@@ -2,14 +2,17 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-
+#include <stdlib.h>
 
 logger_status_t logger_init(logger_t *const logger,
         const severity_t severity,
         log_path_t path)
 {
     FILE *output = fopen(path, "a");
-    if (!output) return LOGGER_FAIL;
+    if (!output) {
+        perror("logger");
+        return LOGGER_FAIL;
+    }
 
     *logger = (logger_t){
         .severity = severity,
@@ -59,5 +62,26 @@ logger_status_t logger_log(logger_t *restrict const logger,
 void logger_deinit(logger_t *const logger)
 {
     fclose(logger->output);
+}
+
+static void logger_static_cleanup(void);
+logger_t *logger_static(void)
+{
+    static logger_t *Instance = 0;
+    static logger_t Logger;
+
+    if (Instance) return Instance;
+
+    LOG_INIT(&Logger, S_LOG_SEVERITY, S_LOG_PATH);
+
+    atexit(logger_static_cleanup);
+
+    Instance = &Logger;
+    return Instance;
+}
+
+static void logger_static_cleanup(void)
+{
+    logger_deinit(logger_static());
 }
 

@@ -4,7 +4,19 @@
 #include <stdio.h>
 #include <assert.h>
 
-#define LOG(...) do { assert(LOGGER_FAIL != logger_log(__VA_ARGS__)); } while(0)
+#define LOG_INIT(...) do {\
+    assert(LOGGER_FAIL != logger_init(__VA_ARGS__)); } while(0)
+
+#define LOG(...) do {\
+    assert(LOGGER_FAIL != logger_log(__VA_ARGS__)); } while(0)
+
+#ifndef S_LOG_SEVERITY
+#   define S_LOG_SEVERITY LOGGER_DEBUG
+#endif
+#ifndef S_LOG_PATH
+#   define S_LOG_PATH "/tmp/mylog.log"
+#endif
+#define S_LOG(...) LOG(logger_static(), __VA_ARGS__)
 
 typedef enum {
     LOGGER_INFO = 0,
@@ -42,5 +54,6 @@ logger_status_t logger_log(logger_t *const logger,
 
 void logger_deinit(logger_t *const logger);
 
+logger_t *logger_static(void);
 
 #endif//_LOGGER_H_
