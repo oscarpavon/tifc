@@ -10,6 +10,7 @@ STAMP_DIR="${BUILD_DIR}/.stamps"
 list() { echo $@ ;}
 
 SUBDIRS=$(list "
+    logger
     display
     input
     ui
