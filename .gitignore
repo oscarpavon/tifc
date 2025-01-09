@@ -16,6 +16,7 @@
 !ui
 !display
 !input
+!logger
 
 # libs softlinks
 !deps/*.a
