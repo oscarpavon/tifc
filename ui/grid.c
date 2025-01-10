@@ -7,6 +7,7 @@
 
 #include <assert.h>
 
+#define MIN_GRID_AREA_SIZE 1
 
 void grid_init(grid_t *const grid,
     uint8_t columns,
@@ -75,6 +76,7 @@ void grid_add_area(grid_t *const grid, grid_span_t span, text_align_t text_align
     grid_area_t area = {
         .text_align = text_align,
         .span = span,
+        .area = INVALID_AREA,
     };
     (void) dynarr_append(&grid->areas, &area);
 }
@@ -87,9 +89,11 @@ void grid_render(const grid_t *const grid, display_t *const display)
     {
         grid_area_t *area = dynarr_get(grid->areas, i);
         border_set_t border = {._ = L"╭╮╯╰┆┄"};
-
-        if (! IS_INVALID_AREA(&cell->area))
-            display_draw_border(display, BORDER_STYLE_1, border, cell->area);
+        (void) area;
+        (void) border;
+        (void) display;
+        if (! IS_INVALID_AREA(&area->area))
+            display_draw_border(display, BORDER_STYLE_1, border, area->area);
     }
 }
 
@@ -103,33 +107,41 @@ void calculate_spans(
         dynarr_t *const grid_spans
     )
 {
-    bool no_space_left = false;
+    // access layout
+    const grid_layout_t *layout = dynarr_get(grid_layout, offset);
+
+    // access span
+    span_t *span = dynarr_get(grid_spans, offset);
     size_t size;
 
     for (size_t i = 0; i < spans_amount; ++i)
     {
-        span_t *span = dynarr_get(grid_spans, i + offset);
-        if (no_space_left)
+        if (0 == length)
         {
             *span = INVALID_SPAN;
+            S_LOG(LOGGER_DEBUG, "Invalid Span %d = {%u, %u}\n", i, span->start, span->end);
             continue;
         }
 
-        // access layout
-        const grid_layout_t *layout = dynarr_get(grid_layout, i + offset);
-
         span->start = start_offset;
-        size = (LAYOUT_SIZE_RELATIVE == layout->size_method)
-            ? layout->size * length / 100
-            : layout->size;
 
-        if (size > length) size = length;
+        size = layout->size;
+        if (LAYOUT_SIZE_RELATIVE == layout->size_method)
+        {
+            size = layout->size * length / 100;
+            if (size < MIN_GRID_AREA_SIZE) size = MIN_GRID_AREA_SIZE;
+        }
+
+        // if no space left for other areas, then consume rest of the panel
+        if (length < size || (length - size < MIN_GRID_AREA_SIZE)) size = length;
 
         span->end = span->start + size - 1;
         start_offset += size;
         length -= size;
 
-        if (0 == length) no_space_left = true;
+        S_LOG(LOGGER_DEBUG, "Span %d = {%u, %u}\n", i, span->start, span->end);
+        ++layout;
+        ++span;
     }
 }
 
@@ -139,62 +151,73 @@ void grid_recalculate_layout(grid_t *const grid, const disp_area_t *const panel_
     assert(grid);
     assert(panel_area);
 
-    const size_t width = panel_area->second.x - panel_area->first.x - 1;
-    const size_t height = panel_area->second.y - panel_area->first.y - 1;
+    const disp_pos_t panel_size = {
+        panel_area->second.x - panel_area->first.x + 1,
+        panel_area->second.y - panel_area->first.y + 1,
+    };
 
+    /* subtracting panel's border */
+    const ssize_t width = panel_size.x - 2;
+    const ssize_t height = panel_size.y - 2;
+    assert(width >= 0);
+    assert(height >= 0);
+
+    S_LOG(LOGGER_DEBUG,
+        "\ngrid_recalculate_layout"
+        "\n==================\n");
+
+    S_LOG(LOGGER_DEBUG, "Calculate columns:\n");
     calculate_spans(panel_area->first.x + 1, width, grid->columns,
             0 /* columns offset */,
             grid->layout, grid->spans);
 
+    S_LOG(LOGGER_DEBUG, "Calculate rows:\n");
     calculate_spans(panel_area->first.y + 1, height, grid->rows,
             grid->columns /* rows offset */,
             grid->layout, grid->spans);
+
+    S_LOG(LOGGER_DEBUG,
+        "\nAreas"
+        "\n==================\n");
 
     const size_t areas_amount = dynarr_size(grid->areas);
     for (size_t i = 0; i < areas_amount; ++i)
     {
         grid_area_t *area = dynarr_get(grid->areas, i);
 
-        const size_t column     = cell->span.column.start;
-        const size_t column_end = cell->span.column.end;
-
-        const span_t *first_column = dynarr_get(grid->spans, column);
-        const span_t *last_column = first_column;
-
-        for (size_t i = column; i < column_end; ++i)
+        const span_t *start_column = dynarr_get(grid->spans, area->span.column.start);
+        const span_t *start_row = dynarr_get(grid->spans, grid->columns + area->span.row.start);
+        if (IS_INVALID_SPAN(start_column) || IS_INVALID_SPAN(start_row))
         {
-            if (IS_INVALID_SPAN(last_column + 1)) break;
-            ++last_column;
-        }
-
-        const size_t row        = cell->span.row.start;
-        const size_t row_end    = cell->span.row.end;
-
-        const span_t *first_row = dynarr_get(grid->spans, grid->columns + row);
-        const span_t *last_row = first_row;
-
-        for (size_t i = row; i < row_end; ++i)
-        {
-            if (IS_INVALID_SPAN(last_row + 1)) break;
-            ++last_row;
-        }
-
-        if (IS_INVALID_SPAN(first_column) || IS_INVALID_SPAN(first_row))
-        {
+            S_LOG(LOGGER_DEBUG, "Invalid Area %d\n", i);
             area->area = INVALID_AREA;
-            return; /* exit */
+            continue;
         }
+
+        const size_t c_range = area->span.column.end - area->span.column.start;
+        const span_t *end_column = start_column;
+        for (size_t i = 0; !IS_INVALID_SPAN(end_column) && i < c_range; ++end_column, ++i);
+
+        const size_t r_range = area->span.row.end - area->span.row.start;
+        const span_t *end_row = start_row;
+        for (size_t i = 0; !IS_INVALID_SPAN(end_row) && i < r_range; ++end_row, ++i);
 
         /* otherwise */
         area->area = (disp_area_t){
             .first = {
-                .x = first_column->start,
-                .y = first_row->start,
+                .x = start_column->start,
+                .y = start_row->start,
             },
             .second = {
-                .x = last_column->end,
-                .y = last_row->end,
+                .x = end_column->end,
+                .y = end_row->end,
             },
         };
+        S_LOG(LOGGER_DEBUG, "Area %d = {%u, %u, %u, %u}\n", i,
+            area->area.first.x,
+            area->area.first.y,
+            area->area.second.x,
+            area->area.second.x
+        );
     }
 }
