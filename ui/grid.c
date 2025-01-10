@@ -105,6 +105,61 @@ void calculate_spans(
         const size_t offset,
         const dynarr_t *const grid_layout,
         dynarr_t *const grid_spans
+    );
+
+static
+void calc_areas(dynarr_t *const areas,
+        span_t columns[],
+        span_t rows[]);
+
+void grid_recalculate_layout(grid_t *const grid, const disp_area_t *const panel_area)
+{
+    assert(grid);
+    assert(panel_area);
+
+    const disp_pos_t panel_size = {
+        panel_area->second.x - panel_area->first.x + 1,
+        panel_area->second.y - panel_area->first.y + 1,
+    };
+
+    /* subtracting panel's border */
+    const ssize_t width = panel_size.x - 2;
+    const ssize_t height = panel_size.y - 2;
+    assert(width >= 0);
+    assert(height >= 0);
+
+    S_LOG(LOGGER_DEBUG,
+        "\ngrid_recalculate_layout"
+        "\n==================\n");
+
+    S_LOG(LOGGER_DEBUG, "Calculate columns:\n");
+    calculate_spans(panel_area->first.x + 1, width, grid->columns,
+            0 /* columns offset */,
+            grid->layout, grid->spans);
+
+    S_LOG(LOGGER_DEBUG, "Calculate rows:\n");
+    calculate_spans(panel_area->first.y + 1, height, grid->rows,
+            grid->columns /* rows offset */,
+            grid->layout, grid->spans);
+
+    S_LOG(LOGGER_DEBUG,
+        "\nAreas"
+        "\n==================\n");
+
+    calc_areas(grid->areas,
+        dynarr_get(grid->spans, 0),
+        dynarr_get(grid->spans, grid->columns));
+}
+
+
+static
+void calculate_spans(
+        size_t start_offset,
+        size_t length,
+        const size_t spans_amount,
+        const size_t offset,
+        const dynarr_t *const grid_layout,
+        dynarr_t *const grid_spans
     )
 {
     // access layout
@@ -146,47 +201,19 @@ void calculate_spans(
 }
 
 
-void grid_recalculate_layout(grid_t *const grid, const disp_area_t *const panel_area)
+static
+void calc_areas(dynarr_t *const areas,
+        span_t columns[],
+        span_t rows[])
 {
-    assert(grid);
-    assert(panel_area);
+    const size_t areas_amount = dynarr_size(areas);
 
-    const disp_pos_t panel_size = {
-        panel_area->second.x - panel_area->first.x + 1,
-        panel_area->second.y - panel_area->first.y + 1,
-    };
-
-    /* subtracting panel's border */
-    const ssize_t width = panel_size.x - 2;
-    const ssize_t height = panel_size.y - 2;
-    assert(width >= 0);
-    assert(height >= 0);
-
-    S_LOG(LOGGER_DEBUG,
-        "\ngrid_recalculate_layout"
-        "\n==================\n");
-
-    S_LOG(LOGGER_DEBUG, "Calculate columns:\n");
-    calculate_spans(panel_area->first.x + 1, width, grid->columns,
-            0 /* columns offset */,
-            grid->layout, grid->spans);
-
-    S_LOG(LOGGER_DEBUG, "Calculate rows:\n");
-    calculate_spans(panel_area->first.y + 1, height, grid->rows,
-            grid->columns /* rows offset */,
-            grid->layout, grid->spans);
-
-    S_LOG(LOGGER_DEBUG,
-        "\nAreas"
-        "\n==================\n");
-
-    const size_t areas_amount = dynarr_size(grid->areas);
     for (size_t i = 0; i < areas_amount; ++i)
     {
-        grid_area_t *area = dynarr_get(grid->areas, i);
+        grid_area_t *area = dynarr_get(areas, i);
+        const span_t *start_column = &columns[area->span.column.start];
+        const span_t *start_row = &rows[area->span.row.start];
 
-        const span_t *start_column = dynarr_get(grid->spans, area->span.column.start);
-        const span_t *start_row = dynarr_get(grid->spans, grid->columns + area->span.row.start);
         if (IS_INVALID_SPAN(start_column) || IS_INVALID_SPAN(start_row))
         {
             S_LOG(LOGGER_DEBUG, "Invalid Area %d\n", i);
@@ -221,3 +248,5 @@ void grid_recalculate_layout(grid_t *const grid, const disp_area_t *const panel_
         );
     }
 }
+
+
