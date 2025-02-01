@@ -69,13 +69,6 @@ typedef struct
 }
 grid_area_t;
 
-typedef struct
-{
-    uint16_t areas;
-    grid_area_opts_t *area_layout;
-}
-grid_opts_t;
-
 void grid_init(grid_t *const grid,
     uint8_t columns,
     uint8_t rows,
@@ -86,7 +79,7 @@ void grid_deinit(grid_t *const grid);
 
 
 void grid_add_area(grid_t *const grid,
-        grid_area_opts_t span);
+        const grid_area_opts_t *const span);
 
 void grid_render(const grid_t *const grid, display_t *const display);
 

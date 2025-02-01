@@ -31,8 +31,11 @@ typedef struct
 
     uint8_t columns;
     uint8_t rows;
+    uint16_t areas;
+
     grid_layout_t *column_layout;
     grid_layout_t *row_layout;
+    grid_area_opts_t *areas_layout;
 }
 panel_opts_t;
 

@@ -64,19 +64,20 @@ void grid_deinit(grid_t *const grid)
 }
 
 
-void grid_add_area(grid_t *const grid, grid_area_opts_t span)
+void grid_add_area(grid_t *const grid, const grid_area_opts_t *const span)
 {
     assert(grid);
 
-    assert(span.column.start <= span.column.end);
-    assert(span.row.start <= span.row.end);
-    assert(span.column.end < grid->columns);
-    assert(span.row.end < grid->rows);
+    assert(span->column.start <= span->column.end);
+    assert(span->row.start <= span->row.end);
+    assert(span->column.end < grid->columns);
+    assert(span->row.end < grid->rows);
 
     grid_area_t area = {
-        .grid_area_opts = span,
+        .grid_area_opts = *span,
         .area = INVALID_AREA,
     };
+    // implement reserve for dynarr ?
     (void) dynarr_append(&grid->areas, &area);
 }
 

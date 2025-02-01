@@ -75,6 +75,11 @@ void panel_init(panel_t *const panel,
         opts->rows,
         opts->column_layout,
         opts->row_layout);
+
+    for (size_t a = 0; a < opts->areas; ++a)
+    {
+        grid_add_area(&panel->grid, &opts->areas_layout[a]);
+    }
 }
 
 void panel_deinit(panel_t *const panel)
