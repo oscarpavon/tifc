@@ -60,19 +60,19 @@ typedef struct
     span_t row;
     text_align_t text_align;
 }
-grid_span_t;
+grid_area_opts_t;
 
 typedef struct
 {
-    grid_span_t span;
+    grid_area_opts_t grid_area_opts;
     disp_area_t area;
 }
 grid_area_t;
 
 typedef struct
 {
-    uint16_t spans;
-    grid_span_t *span;
+    uint16_t areas;
+    grid_area_opts_t *area_layout;
 }
 grid_opts_t;
 
@@ -86,7 +86,7 @@ void grid_deinit(grid_t *const grid);
 
 
 void grid_add_area(grid_t *const grid,
-        grid_span_t span);
+        grid_area_opts_t span);
 
 void grid_render(const grid_t *const grid, display_t *const display);
 

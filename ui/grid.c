@@ -64,7 +64,7 @@ void grid_deinit(grid_t *const grid)
 }
 
 
-void grid_add_area(grid_t *const grid, grid_span_t span)
+void grid_add_area(grid_t *const grid, grid_area_opts_t span)
 {
     assert(grid);
 
@@ -74,7 +74,7 @@ void grid_add_area(grid_t *const grid, grid_span_t span)
     assert(span.row.end < grid->rows);
 
     grid_area_t area = {
-        .span = span,
+        .grid_area_opts = span,
         .area = INVALID_AREA,
     };
     (void) dynarr_append(&grid->areas, &area);
@@ -210,8 +210,8 @@ void calc_areas(dynarr_t *const areas,
     for (size_t i = 0; i < areas_amount; ++i)
     {
         grid_area_t *area = dynarr_get(areas, i);
-        const span_t *start_column = &columns[area->span.column.start];
-        const span_t *start_row = &rows[area->span.row.start];
+        const span_t *start_column = &columns[area->grid_area_opts.column.start];
+        const span_t *start_row = &rows[area->grid_area_opts.row.start];
 
         if (IS_INVALID_SPAN(start_column) || IS_INVALID_SPAN(start_row))
         {
@@ -220,11 +220,11 @@ void calc_areas(dynarr_t *const areas,
             continue;
         }
 
-        const size_t c_range = area->span.column.end - area->span.column.start;
+        const size_t c_range = area->grid_area_opts.column.end - area->grid_area_opts.column.start;
         const span_t *end_column = start_column;
         for (size_t i = 0; !IS_INVALID_SPAN(end_column) && i < c_range; ++end_column, ++i);
 
-        const size_t r_range = area->span.row.end - area->span.row.start;
+        const size_t r_range = area->grid_area_opts.row.end - area->grid_area_opts.row.start;
         const span_t *end_row = start_row;
         for (size_t i = 0; !IS_INVALID_SPAN(end_row) && i < r_range; ++end_row, ++i);
 

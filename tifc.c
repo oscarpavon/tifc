@@ -84,42 +84,42 @@ void tifc_create_ui_layout(tifc_t *const tifc)
         }
     };
     panel_t * panel = ui_add_panel(&tifc->ui, opts);
-    grid_span_t span;
+    grid_area_opts_t span;
 
-    span = (grid_span_t){{0, 0}, {0, 0}, TEXT_ALIGN_LEFT};
+    span = (grid_area_opts_t){{0, 0}, {0, 0}, TEXT_ALIGN_LEFT};
     grid_add_area(&panel->grid, span);
 
-    span = (grid_span_t){{1, 1}, {0, 0}, TEXT_ALIGN_LEFT};
+    span = (grid_area_opts_t){{1, 1}, {0, 0}, TEXT_ALIGN_LEFT};
     grid_add_area(&panel->grid, span);
 
-    span = (grid_span_t){{2, 2}, {0, 0}, TEXT_ALIGN_LEFT};
+    span = (grid_area_opts_t){{2, 2}, {0, 0}, TEXT_ALIGN_LEFT};
     grid_add_area(&panel->grid, span);
 
-    span = (grid_span_t){{3, 3}, {0, 0}, TEXT_ALIGN_LEFT};
+    span = (grid_area_opts_t){{3, 3}, {0, 0}, TEXT_ALIGN_LEFT};
     grid_add_area(&panel->grid, span);
 
-    span = (grid_span_t){{0, 0}, {1, 1}, TEXT_ALIGN_LEFT};
+    span = (grid_area_opts_t){{0, 0}, {1, 1}, TEXT_ALIGN_LEFT};
     grid_add_area(&panel->grid, span);
 
-    span = (grid_span_t){{1, 1}, {1, 1}, TEXT_ALIGN_LEFT};
+    span = (grid_area_opts_t){{1, 1}, {1, 1}, TEXT_ALIGN_LEFT};
     grid_add_area(&panel->grid, span);
 
-    span = (grid_span_t){{2, 2}, {1, 1}, TEXT_ALIGN_LEFT};
+    span = (grid_area_opts_t){{2, 2}, {1, 1}, TEXT_ALIGN_LEFT};
     grid_add_area(&panel->grid, span);
 
-    span = (grid_span_t){{3, 3}, {1, 1}, TEXT_ALIGN_LEFT};
+    span = (grid_area_opts_t){{3, 3}, {1, 1}, TEXT_ALIGN_LEFT};
     grid_add_area(&panel->grid, span);
 
-    span = (grid_span_t){{0, 0}, {2, 2}, TEXT_ALIGN_LEFT};
+    span = (grid_area_opts_t){{0, 0}, {2, 2}, TEXT_ALIGN_LEFT};
     grid_add_area(&panel->grid, span);
 
-    span = (grid_span_t){{1, 1}, {2, 2}, TEXT_ALIGN_LEFT};
+    span = (grid_area_opts_t){{1, 1}, {2, 2}, TEXT_ALIGN_LEFT};
     grid_add_area(&panel->grid, span);
 
-    span = (grid_span_t){{2, 2}, {2, 2}, TEXT_ALIGN_LEFT};
+    span = (grid_area_opts_t){{2, 2}, {2, 2}, TEXT_ALIGN_LEFT};
     grid_add_area(&panel->grid, span);
 
-    span = (grid_span_t){{3, 3}, {2, 2}, TEXT_ALIGN_LEFT};
+    span = (grid_area_opts_t){{3, 3}, {2, 2}, TEXT_ALIGN_LEFT};
     grid_add_area(&panel->grid, span);
 
 
