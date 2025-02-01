@@ -64,7 +64,7 @@ void grid_deinit(grid_t *const grid)
 }
 
 
-void grid_add_area(grid_t *const grid, grid_span_t span, text_align_t text_align)
+void grid_add_area(grid_t *const grid, grid_span_t span)
 {
     assert(grid);
 
@@ -74,7 +74,6 @@ void grid_add_area(grid_t *const grid, grid_span_t span, text_align_t text_align
     assert(span.row.end < grid->rows);
 
     grid_area_t area = {
-        .text_align = text_align,
         .span = span,
         .area = INVALID_AREA,
     };

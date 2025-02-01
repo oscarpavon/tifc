@@ -46,13 +46,6 @@ span_t;
                                   && (span_ptr)->end == (uint16_t) -1)
 #define INVALID_SPAN ((span_t){-1, -1})
 
-typedef struct
-{
-    span_t column;
-    span_t row;
-}
-grid_span_t;
-
 typedef enum
 {
     TEXT_ALIGN_LEFT = 0,
@@ -63,12 +56,25 @@ text_align_t;
 
 typedef struct
 {
+    span_t column;
+    span_t row;
     text_align_t text_align;
+}
+grid_span_t;
+
+typedef struct
+{
     grid_span_t span;
     disp_area_t area;
 }
 grid_area_t;
 
+typedef struct
+{
+    uint16_t spans;
+    grid_span_t *span;
+}
+grid_opts_t;
 
 void grid_init(grid_t *const grid,
     uint8_t columns,
@@ -80,8 +86,7 @@ void grid_deinit(grid_t *const grid);
 
 
 void grid_add_area(grid_t *const grid,
-        grid_span_t span,
-        text_align_t text_align);
+        grid_span_t span);
 
 void grid_render(const grid_t *const grid, display_t *const display);
 
