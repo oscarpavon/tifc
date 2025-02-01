@@ -16,11 +16,15 @@ typedef struct
     uint16_t columns;
     uint16_t rows;
 
+    /* TODO consider arena to store layouts and spans */
     dynarr_t *layout;
-    dynarr_t *areas;
 
     /* columns & rows spans recalculated on resize */
     dynarr_t *spans;
+
+    /* Configured content areas.
+        size will extend to `rows * columns` at max. */
+    dynarr_t *areas;
 }
 grid_t;
 
