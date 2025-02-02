@@ -13,6 +13,13 @@ typedef struct
 }
 panel_layout_t;
 
+typedef enum
+{
+    PANEL_CONTENT_TYPE_RAW = 0, // custom rendering
+    PANEL_CONTENT_TYPE_GRID     // table like rendering
+}
+panel_content_type_t;
+
 typedef struct
 {
     const char    * title;
@@ -20,7 +27,12 @@ typedef struct
     panel_layout_t  layout;
     style_t         style;
     disp_area_t     area;
-    grid_t          grid;
+
+    panel_content_type_t content_type;
+    union content {
+        grid_t      grid;
+    }
+    content;
 }
 panel_t;
 
@@ -29,6 +41,8 @@ typedef struct
     const char     * title;
     panel_layout_t   layout;
 
+    // Specific to grid content type:
+    //  (columns == 0 && rows == 0) means raw content type
     uint8_t columns;
     uint8_t rows;
     uint16_t areas;

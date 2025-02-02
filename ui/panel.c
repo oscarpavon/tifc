@@ -58,19 +58,31 @@ panel_draw_title(const panel_t *panel,
 }
 
 void panel_init(panel_t *const panel,
-                  const panel_opts_t *const opts)
+                const panel_opts_t *const opts)
 {
     assert(panel);
     assert(opts);
+    assert((opts->columns == 0 && opts->rows == 0)   // both zero or nether one is
+        || (opts->columns != 0 && opts->rows != 0));
 
     *panel = (panel_t){
         .title = opts->title,
         .title_size = strlen(opts->title),
         .layout = opts->layout,
-        .area = INVALID_AREA
+        .area = INVALID_AREA,
+        .content_type = (opts->columns == 0 && opts->rows == 0)
+            ? PANEL_CONTENT_TYPE_RAW
+            : PANEL_CONTENT_TYPE_GRID,
     };
 
-    grid_init(&panel->grid,
+    if (PANEL_CONTENT_TYPE_RAW == panel->content_type)
+    {
+        // TODO: allocate raw panel
+        return;
+    }
+
+    // GRID CONTENT:
+    grid_init(&panel->content.grid,
         opts->columns,
         opts->rows,
         opts->column_layout,
@@ -78,14 +90,19 @@ void panel_init(panel_t *const panel,
 
     for (size_t a = 0; a < opts->areas; ++a)
     {
-        grid_add_area(&panel->grid, &opts->areas_layout[a]);
+        grid_add_area(&panel->content.grid, &opts->areas_layout[a]);
     }
 }
 
 void panel_deinit(panel_t *const panel)
 {
     assert(panel);
-    grid_deinit(&panel->grid);
+    if (PANEL_CONTENT_TYPE_RAW == panel->content_type)
+    {
+        // TODO: deallocate raw panel
+        return;
+    }
+    grid_deinit(&panel->content.grid);
 }
 
 void panel_recalculate_layout(panel_t *panel,
@@ -93,10 +110,16 @@ void panel_recalculate_layout(panel_t *panel,
 {
     panel->area = calc_panel_area(&panel->layout, bounds);
 
-    if (!IS_INVALID_AREA(&panel->area))
+    if (IS_INVALID_AREA(&panel->area)) return;
+
+    if (PANEL_CONTENT_TYPE_RAW == panel->content_type)
     {
-        grid_recalculate_layout(&panel->grid, &panel->area); // TODO
+        // recalculate for raw
+        return;
     }
+
+    // GRID:
+    grid_recalculate_layout(&panel->content.grid, &panel->area); // TODO
 }
 
 void panel_render(const panel_t *panel,
@@ -112,9 +135,15 @@ void panel_render(const panel_t *panel,
     display_draw_border(display, panel->style, border, panel_area);
     // display_fill_area(display, panel->style, panel_area);
     panel_draw_title(panel, display);
-    
+
     // render temporary TODO
-    grid_render(&panel->grid, display);
+    if (PANEL_CONTENT_TYPE_RAW == panel->content_type)
+    {
+        // TODO: custom render
+        return;
+    }
+
+    grid_render(&panel->content.grid, display);
 }
 
 
