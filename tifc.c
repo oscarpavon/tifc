@@ -1,6 +1,5 @@
 #include "tifc.h"
 #include "display.h"
-#include "frame.h"
 #include "grid.h"
 #include "layout.h"
 #include "panel.h"
@@ -14,47 +13,20 @@ tifc_t tifc_init(void)
     input_enable_mouse();
     tifc_t tifc = {
         .input = input_init(),
-        .mode = TIFC_CANVAS_MODE,
         .ui = ui_init(),
-        .canvas = canvas_init(),
     };
-    canvas_load_objects(&tifc.canvas);
     return tifc;
 }
 
 void tifc_deinit(tifc_t *const tifc)
 {
     input_disable_mouse();
-    canvas_deinit(&tifc->canvas);
     input_deinit(&tifc->input);
-}
-
-void tifc_canvas_mode(tifc_t *const tifc)
-{
-    tifc->mode = TIFC_CANVAS_MODE;
-}
-
-void tifc_ui_mode(tifc_t* const tifc)
-{
-    tifc->mode = TIFC_UI_MODE;
-}
-
-input_hooks_t* tifc_mode_current_hooks(tifc_t *const tifc)
-{
-    switch (tifc->mode)
-    {
-        case TIFC_CANVAS_MODE: return &tifc->canvas.hooks;
-        case TIFC_UI_MODE:     return &tifc->ui.hooks;
-    }
-    return 0;
 }
 
 void tifc_render(tifc_t *const tifc)
 {
     display_clear(&tifc->display);
-    //canvas_render(&tifc->canvas, &tifc->display);
-    // ...
-    
     ui_render(&tifc->ui, &tifc->display);
     display_render(&tifc->display);
 }
@@ -134,7 +106,7 @@ int tifc_event_loop(void)
     {
         // input_display_overlay(&tifc.input, (disp_pos_t){.x = 0, .y = 3});
         tifc_render(&tifc);
-        input_hooks_t *hooks = tifc_mode_current_hooks(&tifc);
+        input_hooks_t *hooks = &tifc.ui.hooks;
         exit_status = input_handle_events(&tifc.input, hooks, &tifc);
         if (0 != exit_status)
         {
