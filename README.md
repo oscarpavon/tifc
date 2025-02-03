@@ -25,6 +25,24 @@ of some other libraries that I am developing in parallel.
 ## Future Plans
 - Make it generic library for tui applications as replacement for curses-like.
 
+If you call build script without arguments it shows you list of commands.
+```
+./build.sh
+```
+
+If you do:
+```
+./build help compile
+```
+will give you help info about compile subcomman, etc...
+
+
+For generate compile_commands.json
+```
+./build .sh init_clangd
+```
+
+
 ## Build
 ```
 ./rebuild-modules.sh fresh
@@ -38,3 +56,12 @@ For clean
 ```
 ./build.sh clean
 ```
+
+## TODO
+
+Panel content is not yet functional.
+What I doing now is making canvas to work inside one of the panels.
+So basically it will use area of the panel as render area.
+I already have two types of panels:
+- PANEL_CONTENT_TYPE_RAW (this will be used for canvas)
+- PANEL_CONTENT_TYPE_GRID (for ui layouts)
