@@ -27,6 +27,10 @@ of some other libraries that I am developing in parallel.
 
 ## Build
 ```
-./rebuild-modules.sh
-./build.sh
+./build.sh compile
+```
+For clean
+
+```
+./build.sh clean
 ```
