@@ -29,7 +29,7 @@ If you call build script without arguments it shows you list of commands.
 ```
 ./build.sh
 ```
-
+# Help
 If you do:
 ```
 ./build help compile
