@@ -27,6 +27,7 @@ of some other libraries that I am developing in parallel.
 
 ## Build
 ```
+./rebuild-modules.sh fresh
 ./rebuild-modules.sh update
 ./rebuild-modules.sh config
 ./rebuild-modules.sh make
