@@ -39,7 +39,7 @@ If you do:
 will give you help info about compile sub-command, etc...
 
 
-For generate compile_commands.json
+For generating of "compile_commands.json" file:
 ```console
 ./build.sh init_clangd
 ```
@@ -61,7 +61,7 @@ Build project:
 ```console
 ./build.sh compile
 ```
-For clean
+For cleaning:
 ```console
 ./build.sh clean
 ```
