@@ -229,23 +229,24 @@ help() {
             echo "Available targets:\n\ttifc\n\ttests"
         ;;
         check)
-            echo "\t${check_desc}"
+            echo -e "\t${check_desc}"
         ;;
         clean)
-            echo "\t${clean_desc}"
+            echo -e "\t${clean_desc}"
         ;;
         init_clangd)
-            echo "\t${init_clangd_desc}"
+            echo -e "\t${init_clangd_desc}"
         ;;
         help)
-            echo "\t${help_desc}"
+            echo -e "\t${help_desc}"
         ;;
         *)
             echo "Available sub-commands:"
-            echo "\t${compile_desc}"
-            echo "\t${clean_desc}"
-            echo "\t${init_clangd_desc}"
-            echo "\t${help_desc}"
+            #echo -e '\t' "${compile_desc}"
+            echo -e "\t${compile_desc}"
+            echo -e "\t${clean_desc}"
+            echo -e "\t${init_clangd_desc}"
+            echo -e "\t${help_desc}"
         ;;
     esac
 }
