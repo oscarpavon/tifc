@@ -25,35 +25,44 @@ of some other libraries that I am developing in parallel.
 ## Future Plans
 - Make it generic library for tui applications as replacement for curses-like.
 
+# Help
+
 If you call build script without arguments it shows you list of commands.
-```
+```console
 ./build.sh
 ```
-# Help
+
 If you do:
+```console
+./build.sh help compile
 ```
-./build help compile
-```
-will give you help info about compile subcomman, etc...
+will give you help info about compile sub-command, etc...
 
 
-For generate compile_commands.json
+For generating of "compile_commands.json" file:
+```console
+./build.sh init_clangd
 ```
-./build .sh init_clangd
-```
-
 
 ## Build
-```
-./rebuild-modules.sh fresh
+
+Build modules once:
+```console
 ./rebuild-modules.sh update
+./rebuild-modules.sh fresh
 ./rebuild-modules.sh config
 ./rebuild-modules.sh make
+```
+You can just use `config` and then `make` to perform light configuration change (compile flags).
+If things went wrong, `remove-all` modules, to perform clean setup again.
+`remake` is equivalent to `clean` + `make` for all submodules.
+
+Build project:
+```console
 ./build.sh compile
 ```
-For clean
-
-```
+For cleaning:
+```console
 ./build.sh clean
 ```
 
