@@ -242,6 +242,7 @@ help() {
         ;;
         *)
             echo "Available sub-commands:"
+            #echo -e '\t' "${compile_desc}"
             echo -e "\t${compile_desc}"
             echo -e "\t${clean_desc}"
             echo -e "\t${init_clangd_desc}"
